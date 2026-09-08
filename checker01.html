@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>20日用配布期間チェッカー</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+  background: #f5f5f0; color: #1a1a1a;
+  padding: 24px 16px; min-height: 100vh;
+  display: flex; justify-content: center;
+}
+.outer {
+  width: 100%; max-width: 1040px;
+  display: flex; align-items: flex-start; justify-content: center;
+}
+.panel { width: 460px; flex-shrink: 0; }
+.panel.hidden { display: none; }
+.toggle-wrap {
+  display: flex; align-items: flex-start;
+  padding-top: 4px; padding-left: 8px; padding-right: 8px; flex-shrink: 0;
+}
+.toggle-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 2px solid #aaa; background: #fff; color: #666;
+  font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0; line-height: 1;
+}
+.toggle-btn:hover { border-color: #555; color: #333; }
+
+h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; min-height: 32px; }
+
+.card {
+  background: #fff; border-radius: 12px;
+  padding: 14px; margin-bottom: 10px; border: 1px solid #e0e0e0;
+}
+.section-title {
+  font-size: 11px; font-weight: 700; color: #888;
+  margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* テーマカラー */
+.left .btn-main { background: #5BBAF8; }
+.left .btn-main:hover { background: #3aa8f0; }
+.left .btn-sub { background: #e8f5fe; color: #2a7fc0; border: 1px solid #b8dff8; }
+.left .btn-sub:hover { background: #ceeafd; }
+.left .cal-header { background: #eaf6ff; border-bottom-color: #cde8fc; }
+.left .cal-dow { background: #f0faff; border-bottom-color: #cde8fc; }
+.left .calendar-wrap { border-color: #c5e3f8; }
+.left .cal-day.selected { background: #5BBAF8; }
+.left .cal-day.selected:hover { background: #3aa8f0; }
+.left .day-count-main.normal { color: #5BBAF8; }
+.left .history-flash { color: #2a7fc0 !important; }
+.left .btn-clear { color: #5BBAF8; border-color: #5BBAF8; }
+.left .btn-clear:hover { background: #eaf6ff; }
+
+.right .btn-main { background: #FF88B6; }
+.right .btn-main:hover { background: #f070a4; }
+.right .btn-sub { background: #fff0f6; color: #c0306a; border: 1px solid #f8c0d8; }
+.right .btn-sub:hover { background: #ffe0ee; }
+.right .cal-header { background: #fff0f6; border-bottom-color: #f8c0d8; }
+.right .cal-dow { background: #fff5f9; border-bottom-color: #f8c0d8; }
+.right .calendar-wrap { border-color: #f8c0d8; }
+.right .cal-day.selected { background: #FF88B6; }
+.right .cal-day.selected:hover { background: #f070a4; }
+.right .day-count-main.normal { color: #FF88B6; }
+.right .history-flash { color: #c0306a !important; }
+.right .btn-clear { color: #FF88B6; border-color: #FF88B6; }
+.right .btn-clear:hover { background: #fff0f6; }
+
+.btn-main, .btn-sub {
+  width: 100%; border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  font-family: inherit; transition: background 0.15s; padding: 9px;
+  color: #fff;
+}
+.btn-main { margin-bottom: 8px; }
+.btn-sub { margin-top: 8px; color: inherit; }
+.btn-clear {
+  background: none; border: 1px solid; border-radius: 6px;
+  font-size: 11px; cursor: pointer; font-family: inherit;
+  padding: 3px 10px; transition: background 0.15s;
+}
+
+/* カレンダー */
+.calendar-wrap { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+.cal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 10px; border-bottom: 1px solid #e0e0e0;
+}
+.cal-nav {
+  background: none; border: none; font-size: 17px; cursor: pointer;
+  color: #555; padding: 2px 7px; border-radius: 4px; font-family: inherit;
+}
+.cal-nav:hover { background: rgba(0,0,0,0.06); }
+.cal-title { font-size: 13px; font-weight: 600; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.cal-dow {
+  text-align: center; font-size: 10px; padding: 5px 0;
+  color: #888; font-weight: 500; border-bottom: 1px solid #e0e0e0;
+}
+.cal-dow.sat { color: #4a7fd4; }
+.cal-dow.sun { color: #d44a4a; }
+.cal-day {
+  text-align: center; padding: 6px 2px; font-size: 12px;
+  cursor: pointer; border: none; background: none;
+  font-family: inherit; color: #1a1a1a; transition: background 0.1s;
+}
+.cal-day:hover:not(.other-month) { background: rgba(0,0,0,0.05); }
+.cal-day.other-month { color: #ccc; cursor: default; }
+.cal-day.today { font-weight: 700; }
+.cal-day.selected { color: #fff; border-radius: 50%; font-weight: 600; }
+.cal-day.sat:not(.selected) { color: #4a7fd4; }
+.cal-day.sun:not(.selected) { color: #d44a4a; }
+
+/* 履歴 */
+.history-header { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; margin-bottom: 5px; }
+.history-title { font-size: 11px; color: #aaa; }
+.history-list { list-style: none; }
+.history-list li {
+  font-size: 12px; color: #666; padding: 4px 0;
+  border-bottom: 1px solid #f4f4f4; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; line-height: 1.4;
+  transition: color 0.3s ease;
+}
+.history-list li:last-child { border-bottom: none; }
+.history-dot { width: 5px; height: 5px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+
+/* 結果 */
+.no-data { text-align: center; color: #bbb; font-size: 13px; padding: 16px 0; }
+.purchase-date-display {
+  font-size: 12px; color: #888;
+  padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; margin-bottom: 12px;
+}
+.purchase-date-display span { font-weight: 600; color: #1a1a1a; }
+
+/* 日目表示 - 固定高さでガタつき防止 */
+.day-count-big {
+  text-align: center; padding: 14px 0 10px;
+  border-bottom: 1px solid #f0f0f0; margin-bottom: 4px;
+  min-height: 88px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.day-count-main {
+  font-size: 42px; font-weight: 700; line-height: 1; letter-spacing: -1px;
+}
+.day-count-main.normal { /* テーマ色はパネルクラスで指定 */ }
+.day-count-main.out-of-range { color: #bbb; }
+.day-count-sub { font-size: 12px; color: #999; margin-top: 4px; min-height: 18px; }
+
+.info-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 9px 0; border-bottom: 1px solid #f0f0f0;
+}
+.info-row:last-child { border-bottom: none; }
+.info-label { font-size: 12px; color: #666; line-height: 1.5; }
+.info-label small { color: #bbb; font-size: 11px; display: block; }
+/* 結果の右側を固定幅でガタつき防止 */
+.info-value {
+  font-size: 13px; font-weight: 600; text-align: right;
+  line-height: 1.5; min-width: 120px;
+}
+.info-value.large { font-size: 15px; }
+
+.warn-badge {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  margin-top: 2px; padding: 1px 6px; border-radius: 4px;
+}
+.warn-badge.yellow { background: #fff3cd; color: #7a5000; }
+.warn-badge.red { background: #fde8e8; color: #a32d2d; }
+
+/* 配布期間外バナー */
+.status-banner {
+  border-radius: 8px; padding: 8px 12px;
+  text-align: center; font-size: 13px; font-weight: 600; margin-bottom: 10px;
+}
+.banner-expired { background: #fdecea; border: 1px solid #f5c6c3; color: #a32d2d; }
+.banner-future  { background: #f0f4ff; border: 1px solid #c8d8f8; color: #3a5aaa; }
+
+/* 残り日数色 - フォントサイズは変えない */
+.remaining-warn { color: #c87000; }
+.remaining-warn .warn-label { font-weight: 800; }
+.remaining-danger { color: #d44a4a; }
+.remaining-danger .warn-label { font-weight: 800; }
+
+@media (max-width: 700px) {
+  .outer { flex-direction: column; align-items: center; }
+  .panel { width: 100%; max-width: 460px; }
+  .toggle-wrap { padding: 4px 0 8px; justify-content: center; width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="outer">
+
+  <!-- 左パネル -->
+  <div class="panel left" id="panel-left">
+    <h1>🌟</h1>
+    <div class="card">
+      <div class="no-data" id="no-data-left">購入日を登録すると表示されます</div>
+      <div id="result-content-left" style="display:none;"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">購入日を登録</div>
+      <button class="btn-main" onclick="setToday('left')">📅 今日を購入日として登録</button>
+      <div class="calendar-wrap">
+        <div class="cal-header">
+          <button class="cal-nav" onclick="changeMonth('left',-1)">‹</button>
+          <span class="cal-title" id="cal-title-left"></span>
+          <button class="cal-nav" onclick="changeMonth('left',1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-dow-left"></div>
+        <div class="cal-grid" id="cal-days-left"></div>
+      </div>
+      <button class="btn-sub" onclick="saveToHistory('left')">📝 購入履歴に残す</button>
+      <div id="history-left"></div>
+    </div>
+  </div>
+
+  <!-- トグル -->
+  <div class="toggle-wrap">
+    <button class="toggle-btn" id="toggle-btn" onclick="toggleRight()">+</button>
+  </div>
+
+  <!-- 右パネル -->
+  <div class="panel right hidden" id="panel-right">
+    <h1>💓</h1>
+    <div class="card">
+      <div class="no-data" id="no-data-right">購入日を登録すると表示されます</div>
+      <div id="result-content-right" style="display:none;"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">購入日を登録</div>
+      <button class="btn-main" onclick="setToday('right')">📅 今日を購入日として登録</button>
+      <div class="calendar-wrap">
+        <div class="cal-header">
+          <button class="cal-nav" onclick="changeMonth('right',-1)">‹</button>
+          <span class="cal-title" id="cal-title-right"></span>
+          <button class="cal-nav" onclick="changeMonth('right',1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-dow-right"></div>
+        <div class="cal-grid" id="cal-days-right"></div>
+      </div>
+      <button class="btn-sub" onclick="saveToHistory('right')">📝 購入履歴に残す</button>
+      <div id="history-right"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+const DOW = ['(日)','(月)','(火)','(水)','(木)','(金)','(土)'];
+const state = {
+  left:  { year:0, month:0, selected:null },
+  right: { year:0, month:0, selected:null }
+};
+
+function init() {
+  const now = new Date();
+  ['left','right'].forEach(s => {
+    state[s].year = now.getFullYear();
+    state[s].month = now.getMonth();
+    const saved = localStorage.getItem('pd_' + s);
+    if (saved) { const d = new Date(saved); d.setHours(0,0,0,0); state[s].selected = d; }
+    renderCal(s); renderResult(s); renderHistory(s);
+  });
+  if (localStorage.getItem('showRight') === '1') {
+    document.getElementById('panel-right').classList.remove('hidden');
+    document.getElementById('toggle-btn').textContent = '−';
+  }
+}
+
+function toggleRight() {
+  const p = document.getElementById('panel-right');
+  const b = document.getElementById('toggle-btn');
+  const h = p.classList.toggle('hidden');
+  b.textContent = h ? '+' : '−';
+  localStorage.setItem('showRight', h ? '0' : '1');
+}
+
+const isSame = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
+const diffDays = (a,b) => Math.floor((b-a)/86400000);
+const fmt = d => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}${DOW[d.getDay()]}`;
+
+function setToday(s) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  state[s].selected = t; state[s].year = t.getFullYear(); state[s].month = t.getMonth();
+  persist(s);
+}
+
+function persist(s) {
+  localStorage.setItem('pd_' + s, state[s].selected.toISOString());
+  renderCal(s); renderResult(s);
+}
+
+function changeMonth(s, d) {
+  state[s].month += d;
+  if (state[s].month > 11) { state[s].month = 0; state[s].year++; }
+  if (state[s].month < 0)  { state[s].month = 11; state[s].year--; }
+  renderCal(s);
+}
+
+function renderCal(s) {
+  const {year, month, selected} = state[s];
+  document.getElementById('cal-title-' + s).textContent = `${year}年${month+1}月`;
+  const dowEl = document.getElementById('cal-dow-' + s);
+  dowEl.innerHTML = '';
+  DOW.forEach((l,i) => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow' + (i===0?' sun':i===6?' sat':'');
+    el.textContent = l; dowEl.appendChild(el);
+  });
+  const grid = document.getElementById('cal-days-' + s);
+  grid.innerHTML = '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const startDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const prevDays = new Date(year, month, 0).getDate();
+  for (let i = 0; i < startDow; i++) {
+    const b = document.createElement('button');
+    b.className = 'cal-day other-month';
+    b.textContent = prevDays - startDow + 1 + i;
+    grid.appendChild(b);
+  }
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dow = date.getDay();
+    const b = document.createElement('button');
+    let c = 'cal-day';
+    if (dow===0) c += ' sun'; if (dow===6) c += ' sat';
+    if (isSame(date, today)) c += ' today';
+    if (selected && isSame(date, selected)) c += ' selected';
+    b.className = c; b.textContent = day;
+    b.onclick = () => { state[s].selected = date; persist(s); };
+    grid.appendChild(b);
+  }
+  const rem = (startDow + daysInMonth) % 7;
+  for (let i = 1; i < (rem===0?0:8-rem); i++) {
+    const b = document.createElement('button');
+    b.className = 'cal-day other-month'; b.textContent = i; grid.appendChild(b);
+  }
+}
+
+function saveToHistory(s) {
+  if (!state[s].selected) return;
+  const key = 'hist_' + s;
+  let hist = JSON.parse(localStorage.getItem(key) || '[]');
+  const iso = state[s].selected.toISOString();
+  hist = [iso, ...hist.filter(d => d !== iso)].slice(0, 5);
+  localStorage.setItem(key, JSON.stringify(hist));
+  renderHistory(s, iso);
+}
+
+function clearHistory(s) {
+  localStorage.removeItem('hist_' + s);
+  renderHistory(s);
+}
+
+function renderHistory(s, flashIso) {
+  const el = document.getElementById('history-' + s);
+  const hist = JSON.parse(localStorage.getItem('hist_' + s) || '[]');
+  if (!hist.length) { el.innerHTML = ''; return; }
+  let html = `<div class="history-header"><span class="history-title">購入履歴（最大5件まで表示）</span><button class="btn-clear" onclick="clearHistory('${s}')">全消去</button></div><ul class="history-list">`;
+  hist.forEach(iso => {
+    const d = new Date(iso); d.setHours(0,0,0,0);
+    const last = addDays(d, 19);
+    html += `<li id="h_${s}_${iso.replace(/[:.]/g,'')}" onclick="restoreHistory('${s}','${iso}')"><span class="history-dot"></span>${fmt(d)}（〜${fmt(last)}まで）</li>`;
+  });
+  html += '</ul>';
+  el.innerHTML = html;
+  if (flashIso) {
+    const id = `h_${s}_${flashIso.replace(/[:.]/g,'')}`;
+    const li = document.getElementById(id);
+    if (li) {
+      li.classList.add('history-flash');
+      setTimeout(() => li.classList.remove('history-flash'), 600);
+    }
+  }
+}
+
+function restoreHistory(s, iso) {
+  const d = new Date(iso); d.setHours(0,0,0,0);
+  state[s].selected = d; state[s].year = d.getFullYear(); state[s].month = d.getMonth();
+  persist(s);
+}
+
+function renderResult(s) {
+  const noData = document.getElementById('no-data-' + s);
+  const content = document.getElementById('result-content-' + s);
+  const sel = state[s].selected;
+  if (!sel) { noData.style.display = ''; content.style.display = 'none'; return; }
+  noData.style.display = 'none'; content.style.display = '';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const lastDay = addDays(sel, 19);
+  const expireDay = addDays(sel, 20);
+  const dayNum = diffDays(sel, today) + 1;
+  const remaining = diffDays(today, expireDay);
+  const isExpired = today >= expireDay;
+  const isFuture = dayNum < 1;
+
+  let mainClass = 'day-count-main out-of-range';
+  let subText = '';
+  let bannerHtml = '';
+
+  if (isExpired) {
+    bannerHtml = `<div class="status-banner banner-expired">⚠️ 配布期間が終了しています</div>`;
+  } else if (isFuture) {
+    bannerHtml = `<div class="status-banner banner-future">⚠️ 未来の日付を指定しています</div>`;
+  } else {
+    mainClass = 'day-count-main normal';
+    subText = ' / 20日間（配布中）';
+  }
+
+  let html = `<div class="purchase-date-display">購入日：<span>${fmt(sel)}</span></div>`;
+  html += `${bannerHtml}<div class="day-count-big"><div class="${mainClass}">${dayNum}日目</div><div class="day-count-sub">${subText}</div></div>`;
+
+  if (!isExpired && !isFuture) {
+    let remClass = '', badge = '';
+    if (remaining <= 7 && remaining > 3) {
+      remClass = 'remaining-warn';
+      badge = '<div><span class="warn-badge yellow">⚠️ まもなく終了</span></div>';
+    } else if (remaining <= 3) {
+      remClass = 'remaining-danger';
+      badge = '<div><span class="warn-badge red">🚨 期限まであとわずか！</span></div>';
+    }
+    html += `<div class="info-row"><div class="info-label">配布期間終了まで</div><div class="info-value ${remClass}">${remaining}日${badge}</div></div>`;
+  }
+
+  html += `<div class="info-row"><div class="info-label">最終受取日<br><small>この日まで受け取り可能</small></div><div class="info-value large">${fmt(lastDay)}</div></div>`;
+  content.innerHTML = html;
+}
+
+init();
+</script>
+</body>
+</html>
