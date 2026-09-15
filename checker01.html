@@ -50,8 +50,7 @@ h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; min-height: 32px; }
 .left .cal-header { background: #eaf6ff; border-bottom-color: #cde8fc; }
 .left .cal-dow { background: #f0faff; border-bottom-color: #cde8fc; }
 .left .calendar-wrap { border-color: #c5e3f8; }
-.left .cal-day.selected { background: #5BBAF8; }
-.left .cal-day.selected:hover { background: #3aa8f0; }
+.left .cal-day.selected:hover::after { background: #3aa8f0; }
 .left .day-count-main.normal { color: #5BBAF8; }
 .left .history-flash { color: #2a7fc0 !important; }
 .left .btn-clear { color: #5BBAF8; border-color: #5BBAF8; }
@@ -64,8 +63,7 @@ h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; min-height: 32px; }
 .right .cal-header { background: #fff0f6; border-bottom-color: #f8c0d8; }
 .right .cal-dow { background: #fff5f9; border-bottom-color: #f8c0d8; }
 .right .calendar-wrap { border-color: #f8c0d8; }
-.right .cal-day.selected { background: #FF88B6; }
-.right .cal-day.selected:hover { background: #f070a4; }
+.right .cal-day.selected:hover::after { background: #f070a4; }
 .right .day-count-main.normal { color: #FF88B6; }
 .right .history-flash { color: #c0306a !important; }
 .right .btn-clear { color: #FF88B6; border-color: #FF88B6; }
@@ -105,16 +103,39 @@ h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; min-height: 32px; }
 .cal-dow.sat { color: #4a7fd4; }
 .cal-dow.sun { color: #d44a4a; }
 .cal-day {
+  position: relative;
   text-align: center; padding: 6px 2px; font-size: 12px;
   cursor: pointer; border: none; background: none;
   font-family: inherit; color: #1a1a1a; transition: background 0.1s;
+  appearance: none; -webkit-appearance: none;
 }
+.cal-day .day-num { position: relative; z-index: 2; }
 .cal-day:hover:not(.other-month) { background: rgba(0,0,0,0.05); }
 .cal-day.other-month { color: #ccc; cursor: default; }
 .cal-day.today { font-weight: 700; }
-.cal-day.selected { color: #fff; border-radius: 50%; font-weight: 600; }
+.cal-day.selected { color: #fff; font-weight: 700; }
 .cal-day.sat:not(.selected) { color: #4a7fd4; }
 .cal-day.sun:not(.selected) { color: #d44a4a; }
+
+/* 期間中(初日〜最終日)すべてに敷く四角い薄色背景。隙間なく繋がるよう角丸なし */
+.cal-day.range { border-radius: 0; }
+.left .cal-day.range { background: rgba(91,186,248,0.25); }
+.right .cal-day.range { background: rgba(255,136,182,0.25); }
+
+/* 初日・最終日は上記の上にさらに角丸の四角バッジを重ねる */
+.cal-day.selected::after, .cal-day.range-end::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px; right: 3px; bottom: 3px;
+  border-radius: 6px;
+  z-index: 1;
+}
+.left .cal-day.selected::after { background: #5BBAF8; }
+.right .cal-day.selected::after { background: #FF88B6; }
+.left .cal-day.range-end { color: #1f5f8f; font-weight: 700; }
+.right .cal-day.range-end { color: #99235a; font-weight: 700; }
+.left .cal-day.range-end::after { background: rgba(91,186,248,0.5); }
+.right .cal-day.range-end::after { background: rgba(255,136,182,0.5); }
 
 /* 履歴 */
 .history-header { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; margin-bottom: 5px; }
@@ -130,6 +151,7 @@ h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; min-height: 32px; }
 .history-dot { width: 5px; height: 5px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
 
 /* 結果 */
+.result-body { min-height: 250px; }
 .no-data { text-align: center; color: #bbb; font-size: 13px; padding: 16px 0; }
 .purchase-date-display {
   font-size: 12px; color: #888;
@@ -167,8 +189,9 @@ h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; min-height: 32px; }
 
 .warn-badge {
   display: inline-block; font-size: 11px; font-weight: 700;
-  margin-top: 2px; padding: 1px 6px; border-radius: 4px;
+  padding: 1px 6px; border-radius: 4px;
 }
+.badge-slot { min-height: 20px; margin-top: 2px; }
 .warn-badge.yellow { background: #fff3cd; color: #7a5000; }
 .warn-badge.red { background: #fde8e8; color: #a32d2d; }
 
@@ -201,7 +224,7 @@ h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; min-height: 32px; }
     <h1>🌟</h1>
     <div class="card">
       <div class="no-data" id="no-data-left">購入日を登録すると表示されます</div>
-      <div id="result-content-left" style="display:none;"></div>
+      <div id="result-content-left" class="result-body" style="display:none;"></div>
     </div>
     <div class="card">
       <div class="section-title">購入日を登録</div>
@@ -230,7 +253,7 @@ h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; min-height: 32px; }
     <h1>💓</h1>
     <div class="card">
       <div class="no-data" id="no-data-right">購入日を登録すると表示されます</div>
-      <div id="result-content-right" style="display:none;"></div>
+      <div id="result-content-right" class="result-body" style="display:none;"></div>
     </div>
     <div class="card">
       <div class="section-title">購入日を登録</div>
@@ -303,6 +326,17 @@ function changeMonth(s, d) {
   renderCal(s);
 }
 
+function dayClasses(date, today, selected, expiryDate) {
+  const dow = date.getDay();
+  let c = '';
+  if (dow===0) c += ' sun'; if (dow===6) c += ' sat';
+  if (isSame(date, today)) c += ' today';
+  if (selected && expiryDate && date >= selected && date <= expiryDate) c += ' range';
+  if (selected && isSame(date, selected)) c += ' selected';
+  if (expiryDate && isSame(date, expiryDate)) c += ' range-end';
+  return c;
+}
+
 function renderCal(s) {
   const {year, month, selected} = state[s];
   document.getElementById('cal-title-' + s).textContent = `${year}年${month+1}月`;
@@ -316,31 +350,33 @@ function renderCal(s) {
   const grid = document.getElementById('cal-days-' + s);
   grid.innerHTML = '';
   const today = new Date(); today.setHours(0,0,0,0);
+  const expiryDate = selected ? addDays(selected, 19) : null;
   const startDow = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const prevDays = new Date(year, month, 0).getDate();
   for (let i = 0; i < startDow; i++) {
+    const dayNum = prevDays - startDow + 1 + i;
+    const date = new Date(year, month - 1, dayNum);
     const b = document.createElement('button');
-    b.className = 'cal-day other-month';
-    b.textContent = prevDays - startDow + 1 + i;
+    b.className = 'cal-day other-month' + dayClasses(date, today, selected, expiryDate);
+    b.innerHTML = `<span class="day-num">${dayNum}</span>`;
     grid.appendChild(b);
   }
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
-    const dow = date.getDay();
     const b = document.createElement('button');
-    let c = 'cal-day';
-    if (dow===0) c += ' sun'; if (dow===6) c += ' sat';
-    if (isSame(date, today)) c += ' today';
-    if (selected && isSame(date, selected)) c += ' selected';
-    b.className = c; b.textContent = day;
+    b.className = 'cal-day' + dayClasses(date, today, selected, expiryDate);
+    b.innerHTML = `<span class="day-num">${day}</span>`;
     b.onclick = () => { state[s].selected = date; persist(s); };
     grid.appendChild(b);
   }
   const rem = (startDow + daysInMonth) % 7;
   for (let i = 1; i < (rem===0?0:8-rem); i++) {
+    const date = new Date(year, month + 1, i);
     const b = document.createElement('button');
-    b.className = 'cal-day other-month'; b.textContent = i; grid.appendChild(b);
+    b.className = 'cal-day other-month' + dayClasses(date, today, selected, expiryDate);
+    b.innerHTML = `<span class="day-num">${i}</span>`;
+    grid.appendChild(b);
   }
 }
 
@@ -422,12 +458,12 @@ function renderResult(s) {
     let remClass = '', badge = '';
     if (remaining <= 7 && remaining > 3) {
       remClass = 'remaining-warn';
-      badge = '<div><span class="warn-badge yellow">⚠️ まもなく終了</span></div>';
+      badge = '<span class="warn-badge yellow">⚠️ まもなく終了</span>';
     } else if (remaining <= 3) {
       remClass = 'remaining-danger';
-      badge = '<div><span class="warn-badge red">🚨 期限まであとわずか！</span></div>';
+      badge = '<span class="warn-badge red">🚨 期限まであとわずか！</span>';
     }
-    html += `<div class="info-row"><div class="info-label">配布期間終了まで</div><div class="info-value ${remClass}">${remaining}日${badge}</div></div>`;
+    html += `<div class="info-row"><div class="info-label">配布期間終了まで</div><div class="info-value ${remClass}">${remaining}日<div class="badge-slot">${badge}</div></div></div>`;
   }
 
   html += `<div class="info-row"><div class="info-label">最終受取日<br><small>この日まで受け取り可能</small></div><div class="info-value large">${fmt(lastDay)}</div></div>`;
