@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はちくんのbio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    background: #f5f5f0;
+    color: #1a1a1a;
+    padding: 24px 16px;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .container {
+    width: 100%;
+    max-width: 640px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  h1 {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .layout {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .menu {
+    width: 150px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .menu-btn {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .menu-btn:hover { background: #eee; }
+  .menu-btn.active {
+    background: #D5BC62;
+    color: #1a1a1a;
+    border-color: #D5BC62;
+  }
+
+  .content {
+    flex: 1;
+    min-width: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 28px 20px;
+    font-size: 14px;
+    line-height: 1.9;
+  }
+  .content-panel { display: none; }
+  .content-panel.active { display: block; }
+
+  .content-panel p { margin-bottom: 14px; }
+  .content-panel p:last-child { margin-bottom: 0; }
+  .content-panel p.section-label {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 6px;
+  }
+  .trade-list {
+    list-style: none;
+    margin-bottom: 14px;
+  }
+  .trade-list li {
+    position: relative;
+    padding-left: 14px;
+    margin-bottom: 8px;
+  }
+  .trade-list li::before {
+    content: '・';
+    position: absolute;
+    left: 0;
+  }
+  .sub-note {
+    font-size: 12.5px;
+    color: #888;
+  }
+  .content a {
+    color: #3a7fc4;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(58,127,196,0.35);
+  }
+  .content a:hover { border-bottom-color: #3a7fc4; }
+  #panel-link a { font-weight: 700; }
+  .content a.link-btn {
+    display: inline-block;
+    color: #1a1a1a;
+    background: #f5f5f0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 7px 16px;
+    text-decoration: none;
+  }
+  .content a.link-btn:hover { background: #eee; border-bottom: none; }
+  .link-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  @media (max-width: 700px) {
+    body {
+      height: auto;
+      overflow: auto;
+      padding: 16px 12px;
+    }
+    .container { height: auto; }
+    .layout { flex-direction: column; }
+    .menu {
+      width: 100%;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .menu-btn { flex: 1 1 auto; text-align: center; }
+    .content {
+      width: 100%;
+      height: auto;
+      overflow-y: visible;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>はちくんのbio</h1>
+  <div class="layout">
+    <div class="menu">
+      <button class="menu-btn active" data-panel="top">about</button>
+      <button class="menu-btn" data-panel="follow">フォローについて</button>
+      <button class="menu-btn" data-panel="profile">細かい自己紹介</button>
+      <button class="menu-btn" data-panel="trade">お取引について</button>
+      <button class="menu-btn" data-panel="link">link</button>
+    </div>
+
+    <div class="content">
+
+      <div class="content-panel active" id="panel-top">
+        <p>三度の飯より長髪の男が大好き。<br>
+        独り言多めなゲーム中心オタク活動中のアラサー。<br>
+        完全夢属性の自己投影型だけど容姿設定はあるよ。<br>
+        海外在住のため時差による活動時間のズレがありま⁠す。</p>
+
+        <br>
+        <p class="section-label">◆本命の彼◆</p>
+        <p>🌟星色ステディ:2023/8/11～<br>
+        🥃浅羽湊輔くん→出会い:2023/8/11～、交際:8/23～</p>
+      </div>
+
+      <div class="content-panel" id="panel-follow">
+        <p>賑やかで愛に満ちたTL構築を目的に、目についた星色彼女さんたちをフォローしていま⁠す。<br>
+        眺めつつ勝手に応援してるだけなのでフォローバックはしてもらわなくても大丈夫です。</p>
+
+        <p>挨拶不要です。フォローもご自由に。<br><br>
+        星色くん専用垢かつ、プレイスタイル等(自己投影度合いとか)にシンパシーを感じる方だけフォロー&amp;フォローバックしてま⁠す。<br>
+        違う生き方してるなと思ったら外してま⁠すが、それだけなので気にしないでください。再フォローもお好きにどうぞ。<br><br>
+        ネタバレ回避のため、うちの人とお話しする方はTLにお迎えしません。</p>
+      </div>
+
+      <div class="content-panel" id="panel-profile">
+        <p>※名前を呼ぶ必要がある時は気軽にはちくんと呼んでください。<br>
+        ※「呼びタメ」確認不要。ご自身の判断でお好きにどうぞ。<br>
+        ※本アカウントが使用する絵、スクショ、写真等はすべて自力生産です。</p>
+
+        <br>
+        <p class="section-label">◆交流◆</p>
+        <p>壁打ちマシンです。<br>
+        交流せんことはないけど、真面目に向き合うとうまく応えられない(コミュ障)ことに苦悩しちゃうので浅め軽めにやってま⁠す。<br>
+        長文マンなのでリプライよ⁠りDMが助かります。本当に。<br>
+        みんなたちのお役に立ちたい気持ちはあるので、何か分からないことや質問とか(星色くんに関することでも、他のことでも何でも)がありましたらお気軽にどうぞ～。</p>
+
+        <br>
+        <p class="section-label">◆弱点◆</p>
+        <p>ネガティブなものだいたい不得手です。<br>
+        気難し屋さんなので不得手が多いですが、こちらの問題なのであまり気にしないでもらえると助かりま⁠す。<br>
+        苦手を発信することがあっても、そこに他者からの気遣いを求める意図はありません。</p>
+      </div>
+
+      <div class="content-panel" id="panel-trade">
+        <p class="sub-note">※PLUS MATE、ニジカレ、星色ステディ、それぞれでの彼氏について触れてま⁠す。<br>
+        ※海外からのアクセスが禁止されている関係でカラット系チャトゲは2024年9月からINできておりません。予めご了承ください。</p>
+
+        <p>当方は現在海外在住ですが、お見送り(発送)は日本国内の転送サービス宛てにお願いしておりま⁠す。<br>
+        そちらの都合等でいくつかお願いごとがございま⁠すので、事前に以下に目を通していただけましたら幸いです。</p>
+
+        <br>
+        <p class="section-label">◆お取引の詳細◆</p>
+        <ul class="trade-list">
+          <li>梱包は通常のお取引と同じでOK</li>
+          <li>税関を通すため、内容物のご連絡は種類・数量を正確にお願いしま⁠す <span class="sub-note">(お手紙など金銭の関わらないものは記載不要です)</span></li>
+          <li>お伝えする住所は管理用の【アル⁠ファベット、番号】まで正確にご記入お願いしま⁠す <span class="sub-note">(併せて実際の住所もご連絡しま⁠すが、こちらは使いません)</span></li>
+          <li>荷物管理のため、お見送り(発送)の際に発送元の【お名前】をご連絡ください</li>
+          <li>お支払いはゆうちょ銀行からの振り込み、またはPayPay送金が可能 <span class="sub-note">(他の方法をご希望の場合は使用可能か確認しま⁠すので、まずはご相談ください)</span></li>
+          <li>お支払いタイミングは【送料確定時】</li>
+          <li>お荷物が転送サービスの住所に到着した時点でお取引終了</li>
+        </ul>
+
+        <p>こんな感じです。<br>
+        ご不明点等ありましたらお気軽にお問い合わせくださいませ～！</p>
+
+        <br>
+        <p class="section-label">◆回収対象迷子さん◆</p>
+        <p>浅羽湊輔(星色ステディ)<br>
+        棗京麻(PLUS MATE) 楪紫苑(ニジカレ)</p>
+
+        <p class="sub-note">無限回収はしておりません。<br>
+        また、こちらから他の方へのお譲りが困難なため、上記の彼氏以外のカレさんと抱き合わせでの引き取りはできません。<br>
+        (お茶会組に関しては揃えたくなることがあります)</p>
+      </div>
+
+      <div class="content-panel" id="panel-link">
+        <p class="section-label">◆各種アカウント等◆</p>
+        <div class="link-row">
+          <a class="link-btn" href="https://x.com/3110_8b" target="_blank" rel="noopener">Twitter</a>
+          <a class="link-btn" href="https://fusetter.com/u/89014" target="_blank" rel="noopener">fusetter</a>
+          <a class="link-btn" href="https://privatter.net/u/3110_8b" target="_blank" rel="noopener">Privatter</a>
+          <a class="link-btn" href="https://privatter.me/user/ihzougnas" target="_blank" rel="noopener">Privatter+</a>
+        </div>
+
+        <br>
+        <p class="section-label">◆色々倉庫◆</p>
+        <p><a class="link-btn" href="https://89014.tumblr.com/" target="_blank" rel="noopener">Tumblr</a></p>
+        <p class="sub-note">passは相互限定記事(<a href="https://privatter.net/p/11294052" target="_blank" rel="noopener">Privatter</a>、<a href="https://fusetter.com/tw/yQMQjwru" target="_blank" rel="noopener">fusetter</a>)に書いてます。そちらでご覧いただくか、Twitterの方からDMでご連絡いただければお答えしま⁠す。<br>
+        Twitterで現在相互でない方(片道の方、過去に相互だった方)も概ねお通ししてますので、お気軽にどうぞ。<br>
+        うちの人とお話しする方は通しません。</p>
+
+        <br>
+        <p>◆匿名連絡用窓口◆<br>
+        <a class="link-btn" href="https://wavebox.me/wave/a0p6934znue7wyx5" target="_blank" rel="noopener">Wavebox</a></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.menu-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
