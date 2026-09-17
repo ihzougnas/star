@@ -217,6 +217,13 @@ function update() {
     pos += 99;
   }
 
+  // 最後の1通が1字だけになる場合は、直前の通(99字)と合わせて
+  // ちょうど100字の最終通として送れるようにする(→は不要なため)
+  if (chunks.length >= 2 && chunks[chunks.length - 1].length === 1) {
+    const merged = chunks[chunks.length - 2] + chunks[chunks.length - 1];
+    chunks.splice(chunks.length - 2, 2, merged);
+  }
+
   const total = chunks.length;
   blockCount.textContent = total;
 
