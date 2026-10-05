@@ -96,6 +96,7 @@
   .next-sub { font-size: 11px; color: #aaa; margin-top: 2px; line-height: 1.6; }
   .name-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 700; margin: 0 1px; }
   .badge-sep { color: #ccc; margin: 0 1px; }
+  .next-disclaimer { font-size: 10.5px; color: #bbb; margin-top: 12px; line-height: 1.6; }
 
   /* 今月のカレンダー */
   .month-box { background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
@@ -436,7 +437,8 @@ function renderNextBox() {
     const prefix = isMain ? '次の記念日イベントは' : '';
     return `<div class="${cls}">${prefix}${names} ${label}<br>${md}まであと${d}日</div>`;
   }
-  box.innerHTML = line(groups[0], true) + line(groups[1], false) + line(groups[2], false);
+  const disclaimer = '<div class="next-disclaimer">※記念日イベントはステディ・カレによって実装時期が異なるため、予告通りの開催とはならない場合があります。</div>';
+  box.innerHTML = line(groups[0], true) + line(groups[1], false) + line(groups[2], false) + disclaimer;
 }
 
 /* ---- リスト(交際日順・記念日順・イベント順) ---- */
