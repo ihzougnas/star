@@ -193,7 +193,7 @@
       <div class="data-row">
         <select id="export-format" class="format-select">
           <option value="encoded">符号化</option>
-          <option value="plain">テキストのまま</option>
+          <option value="plain">テキスト</option>
         </select>
       </div>
       <div class="data-row">
@@ -309,22 +309,26 @@ function renderLinks() {
 
 const POOL_LABEL = { S: '星色ステディ', H: 'ハートビート音楽院', O: 'ほか' };
 
+function toBracketText(links) {
+  return links.map(l => `[${l.label}](${l.url})`).join(',\n');
+}
 function refreshExportText() {
   const fmt = document.getElementById('export-format').value;
-  document.getElementById('export-text').value = fmt === 'plain' ? JSON.stringify(customLinks) : encodeSave();
+  if (fmt === 'plain') {
+    const all = [...customLinks.S, ...customLinks.H, ...customLinks.O];
+    document.getElementById('export-text').value = toBracketText(all);
+  } else {
+    document.getElementById('export-text').value = encodeSave();
+  }
 }
 document.getElementById('export-format').addEventListener('change', refreshExportText);
 
-// 読み込み時は符号化(base64)・テキストそのまま(JSON)のどちらでも自動判定して読み取る
-function decodeAny(raw) {
-  const viaBase64 = decodeSave(raw);
-  if (viaBase64) return viaBase64;
-  try {
-    const obj = JSON.parse(raw.trim());
-    return normalizeLinks(obj);
-  } catch (e) {
-    return null;
-  }
+// [タイトル](URL) 形式のテキストから、カンマまたは改行区切りのリンクを読み取る
+function parseBracketText(raw) {
+  const matches = [...raw.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)];
+  return matches
+    .map(m => ({ label: m[1].trim(), url: m[2].trim() }))
+    .filter(l => l.label && /^https?:\/\/.+/.test(l.url));
 }
 
 let editMode = false;
@@ -347,7 +351,7 @@ function renderEditPanel() {
           <span class="edit-url">${link.url}</span>
           <button type="button" data-pool="${pool}" data-i="${i}" class="up" ${i === 0 ? 'disabled' : ''}>↑</button>
           <button type="button" data-pool="${pool}" data-i="${i}" class="down" ${i === customLinks[pool].length - 1 ? 'disabled' : ''}>↓</button>
-          <button type="button" data-pool="${pool}" data-i="${i}" class="del">削除</button>
+          <button type="button" data-pool="${pool}" data-i="${i}" class="del">✖</button>
         </div>
       `;
     });
@@ -368,6 +372,8 @@ function renderEditPanel() {
   }));
   panel.querySelectorAll('button.del').forEach(btn => btn.addEventListener('click', () => {
     const pool = btn.dataset.pool, i = Number(btn.dataset.i);
+    const label = customLinks[pool][i].label;
+    if (!confirm(`「${label}」を削除します。よろしいですか？`)) return;
     customLinks[pool].splice(i, 1);
     saveCustom(); renderLinks(); refreshExportText(); renderEditPanel();
   }));
@@ -412,17 +418,31 @@ document.getElementById('paste-btn').addEventListener('click', () => {
 document.getElementById('import-btn').addEventListener('click', () => {
   const raw = document.getElementById('import-text').value;
   if (!raw.trim()) { showToast('コードを入力してください'); return; }
-  const decoded = decodeAny(raw);
-  if (!decoded) { showToast('コードを読み取れませんでした'); return; }
-  if ((customLinks.S.length + customLinks.H.length + customLinks.O.length) > 0) {
-    if (!confirm('現在追加されているリンクを、読み込んだコードの内容で置き換えます。よろしいですか？')) return;
+  const decoded = decodeSave(raw);
+  if (decoded) {
+    // 符号化されたコード:全体を置き換える(バックアップの復元)
+    if ((customLinks.S.length + customLinks.H.length + customLinks.O.length) > 0) {
+      if (!confirm('現在追加されているリンクを、読み込んだコードの内容で置き換えます。よろしいですか？')) return;
+    }
+    customLinks = decoded;
+    saveCustom();
+    renderLinks();
+    refreshExportText();
+    renderEditPanel();
+    showToast('読み込みました');
+    return;
   }
-  customLinks = decoded;
+
+  // [タイトル](URL) 形式のテキスト:「追加先」で選んだカテゴリにまとめて追加する
+  const newLinks = parseBracketText(raw);
+  if (newLinks.length === 0) { showToast('コードを読み取れませんでした'); return; }
+  const pool = document.getElementById('add-pool').value;
+  customLinks[pool].push(...newLinks);
   saveCustom();
   renderLinks();
   refreshExportText();
   renderEditPanel();
-  showToast('読み込みました');
+  showToast(`${POOL_LABEL[pool]}に${newLinks.length}件追加しました`);
 });
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (!confirm('追加したリンクをすべて削除します。よろしいですか？この操作は元に戻せません。')) return;
