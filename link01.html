@@ -46,6 +46,7 @@
     transition: filter 0.1s;
   }
   .link-btn.wide { grid-column: span 2; }
+  .link-btn.full { grid-column: span 3; }
   .link-btn:hover { filter: brightness(0.93); }
 
   .add-form {
@@ -84,6 +85,35 @@
   .add-status { font-size: 12px; min-height: 16px; }
   .add-status.ok { color: #2a8f4f; }
   .add-status.err { color: #c0392b; }
+
+  .edit-panel {
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;
+  }
+  .edit-pool-title { font-size: 12px; color: #888; font-weight: 600; margin: 10px 0 6px; }
+  .edit-pool-title:first-child { margin-top: 0; }
+  .edit-row {
+    display: flex; align-items: center; gap: 6px; padding: 7px 0; border-bottom: 1px solid #f0f0f0;
+  }
+  .edit-row:last-child { border-bottom: none; }
+  .edit-chip {
+    font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 6px; flex-shrink: 0;
+    max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .edit-url {
+    font-size: 11px; color: #999; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .edit-row button {
+    flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #ccc; border-radius: 6px;
+    background: #fff; color: #666; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .edit-row button:hover { background: #eee; }
+  .edit-row button.del { color: #c0392b; border-color: #e0a0a0; }
+  .edit-row button.del:hover { background: #ffe8e8; }
+  .edit-empty { font-size: 12px; color: #bbb; }
+  .format-select {
+    font-size: 12px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 8px;
+    font-family: inherit; background: #fff; color: #555;
+  }
 
   .data-box { background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 14px 16px; }
   .data-section { margin-bottom: 14px; }
@@ -154,9 +184,18 @@
     <div class="add-status" id="add-status"></div>
   </div>
 
+  <button type="button" class="small-btn" id="edit-toggle-btn" style="width:100%; margin-bottom:16px;">追加したリンクを編集する</button>
+  <div class="edit-panel" id="edit-panel" style="display:none;"></div>
+
   <div class="data-box">
     <div class="data-section">
       <div class="data-label">保存用コード(コピーして控えてください)</div>
+      <div class="data-row">
+        <select id="export-format" class="format-select">
+          <option value="encoded">符号化</option>
+          <option value="plain">テキストのまま</option>
+        </select>
+      </div>
       <div class="data-row">
         <textarea id="export-text" rows="2" readonly></textarea>
         <button class="small-btn" id="copy-btn">コピー</button>
@@ -240,8 +279,12 @@ function decodeSave(str) {
   }
 }
 
-// ボタンの文字数が多い場合は2列分の幅(span 2)にする
-function needsWide(label) { return label.length >= 9; }
+// ボタンの文字数に応じて2列分・3列分(最大)の幅にする。それでも収まらない場合は折り返しで対応。
+function spanClass(label) {
+  if (label.length >= 16) return 'full';
+  if (label.length >= 9) return 'wide';
+  return '';
+}
 
 let toastTimer = null;
 function showToast(msg) {
@@ -257,16 +300,83 @@ function renderLinks() {
     const grid = document.getElementById('grid-' + pool);
     const all = [...DEFAULT_LINKS[pool], ...customLinks[pool]];
     grid.innerHTML = all.map(link => `
-      <a class="link-btn${needsWide(link.label) ? ' wide' : ''}" style="background:${POOL_COLOR[pool]};" href="${link.url}" target="_blank" rel="noopener">${link.label}</a>
+      <a class="link-btn ${spanClass(link.label)}" style="background:${POOL_COLOR[pool]};" href="${link.url}" target="_blank" rel="noopener">${link.label}</a>
     `).join('');
   });
   // 「ほか」は登録されているリンクがある場合のみ表示
   document.getElementById('section-O').style.display = customLinks.O.length > 0 ? '' : 'none';
 }
 
+const POOL_LABEL = { S: '星色ステディ', H: 'ハートビート音楽院', O: 'ほか' };
+
 function refreshExportText() {
-  document.getElementById('export-text').value = encodeSave();
+  const fmt = document.getElementById('export-format').value;
+  document.getElementById('export-text').value = fmt === 'plain' ? JSON.stringify(customLinks) : encodeSave();
 }
+document.getElementById('export-format').addEventListener('change', refreshExportText);
+
+// 読み込み時は符号化(base64)・テキストそのまま(JSON)のどちらでも自動判定して読み取る
+function decodeAny(raw) {
+  const viaBase64 = decodeSave(raw);
+  if (viaBase64) return viaBase64;
+  try {
+    const obj = JSON.parse(raw.trim());
+    return normalizeLinks(obj);
+  } catch (e) {
+    return null;
+  }
+}
+
+let editMode = false;
+function renderEditPanel() {
+  const panel = document.getElementById('edit-panel');
+  if (!editMode) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+
+  const hasAny = POOLS.some(p => customLinks[p].length > 0);
+  if (!hasAny) { panel.innerHTML = '<div class="edit-empty">編集できる(自分で追加した)リンクがまだありません。</div>'; return; }
+
+  let html = '';
+  POOLS.forEach(pool => {
+    if (customLinks[pool].length === 0) return;
+    html += `<div class="edit-pool-title">${POOL_LABEL[pool]}</div>`;
+    customLinks[pool].forEach((link, i) => {
+      html += `
+        <div class="edit-row">
+          <span class="edit-chip" style="background:${POOL_COLOR[pool]};color:#fff;">${link.label}</span>
+          <span class="edit-url">${link.url}</span>
+          <button type="button" data-pool="${pool}" data-i="${i}" class="up" ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button type="button" data-pool="${pool}" data-i="${i}" class="down" ${i === customLinks[pool].length - 1 ? 'disabled' : ''}>↓</button>
+          <button type="button" data-pool="${pool}" data-i="${i}" class="del">削除</button>
+        </div>
+      `;
+    });
+  });
+  panel.innerHTML = html;
+
+  panel.querySelectorAll('button.up').forEach(btn => btn.addEventListener('click', () => {
+    const pool = btn.dataset.pool, i = Number(btn.dataset.i);
+    const arr = customLinks[pool];
+    [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+    saveCustom(); renderLinks(); refreshExportText(); renderEditPanel();
+  }));
+  panel.querySelectorAll('button.down').forEach(btn => btn.addEventListener('click', () => {
+    const pool = btn.dataset.pool, i = Number(btn.dataset.i);
+    const arr = customLinks[pool];
+    [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
+    saveCustom(); renderLinks(); refreshExportText(); renderEditPanel();
+  }));
+  panel.querySelectorAll('button.del').forEach(btn => btn.addEventListener('click', () => {
+    const pool = btn.dataset.pool, i = Number(btn.dataset.i);
+    customLinks[pool].splice(i, 1);
+    saveCustom(); renderLinks(); refreshExportText(); renderEditPanel();
+  }));
+}
+document.getElementById('edit-toggle-btn').addEventListener('click', () => {
+  editMode = !editMode;
+  document.getElementById('edit-toggle-btn').textContent = editMode ? '編集を終了する' : '追加したリンクを編集する';
+  renderEditPanel();
+});
 
 document.getElementById('add-submit-btn').addEventListener('click', () => {
   const label = document.getElementById('add-label').value.trim();
@@ -281,6 +391,7 @@ document.getElementById('add-submit-btn').addEventListener('click', () => {
   saveCustom();
   renderLinks();
   refreshExportText();
+  renderEditPanel();
 
   document.getElementById('add-label').value = '';
   document.getElementById('add-url').value = '';
@@ -301,7 +412,7 @@ document.getElementById('paste-btn').addEventListener('click', () => {
 document.getElementById('import-btn').addEventListener('click', () => {
   const raw = document.getElementById('import-text').value;
   if (!raw.trim()) { showToast('コードを入力してください'); return; }
-  const decoded = decodeSave(raw);
+  const decoded = decodeAny(raw);
   if (!decoded) { showToast('コードを読み取れませんでした'); return; }
   if ((customLinks.S.length + customLinks.H.length + customLinks.O.length) > 0) {
     if (!confirm('現在追加されているリンクを、読み込んだコードの内容で置き換えます。よろしいですか？')) return;
@@ -310,6 +421,7 @@ document.getElementById('import-btn').addEventListener('click', () => {
   saveCustom();
   renderLinks();
   refreshExportText();
+  renderEditPanel();
   showToast('読み込みました');
 });
 document.getElementById('reset-btn').addEventListener('click', () => {
@@ -318,12 +430,14 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   saveCustom();
   renderLinks();
   refreshExportText();
+  renderEditPanel();
   showToast('リセットしました');
 });
 
 loadCustom();
 renderLinks();
 refreshExportText();
+renderEditPanel();
 </script>
 </body>
 </html>
