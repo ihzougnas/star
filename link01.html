@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>リンク集</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    background: #f5f5f0;
+    color: #1a1a1a;
+    padding: 24px 16px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+  .container { width: 100%; max-width: 480px; }
+
+  .link-section { margin-bottom: 24px; }
+  .section-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+  .link-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 6px;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.3;
+    text-decoration: none;
+    text-align: center;
+    white-space: normal;
+    word-break: break-word;
+    transition: filter 0.1s;
+  }
+  .link-btn.wide { grid-column: span 2; }
+  .link-btn:hover { filter: brightness(0.93); }
+
+  .add-form {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .form-label { font-size: 12px; color: #888; font-weight: 500; }
+  .add-form input[type="text"], .add-form input[type="url"], .add-form select {
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-family: inherit;
+    background: #fff;
+    color: #1a1a1a;
+  }
+  .add-form .submit-btn {
+    padding: 11px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    background: #1a1a1a;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .add-form .submit-btn:hover { background: #333; }
+  .add-status { font-size: 12px; min-height: 16px; }
+  .add-status.ok { color: #2a8f4f; }
+  .add-status.err { color: #c0392b; }
+
+  .data-box { background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 14px 16px; }
+  .data-section { margin-bottom: 14px; }
+  .data-section:last-of-type { margin-bottom: 10px; }
+  .data-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .data-row { display: flex; gap: 6px; align-items: stretch; }
+  .data-box textarea {
+    flex: 1; min-width: 0;
+    font-size: 11.5px; font-family: monospace; padding: 8px; border: 1px solid #ccc;
+    border-radius: 8px; resize: vertical; color: #1a1a1a;
+  }
+  .data-btn-col { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+  .data-btn-col .small-btn, .data-row > .small-btn { flex: 1; flex-shrink: 0; }
+  .small-btn {
+    padding: 8px 12px; font-size: 12.5px; font-weight: 500; border: 1px solid #ccc; border-radius: 8px;
+    background: #fff; color: #555; cursor: pointer; font-family: inherit; white-space: nowrap;
+  }
+  .small-btn:hover { background: #eee; }
+  .reset-btn {
+    width: 100%; padding: 9px; font-size: 13px; font-weight: 600; border: 1px solid #e0a0a0;
+    border-radius: 8px; background: #fff5f5; color: #c0392b; cursor: pointer; font-family: inherit;
+  }
+  .reset-btn:hover { background: #ffe8e8; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: #fff; font-size: 13px; padding: 7px 18px; border-radius: 99px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 10;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="link-section">
+    <div class="section-title">星色ステディ</div>
+    <div class="link-grid" id="grid-S"></div>
+  </div>
+
+  <div class="link-section">
+    <div class="section-title">ハートビート音楽院</div>
+    <div class="link-grid" id="grid-H"></div>
+  </div>
+
+  <div class="link-section" id="section-O" style="display:none;">
+    <div class="section-title">ほか</div>
+    <div class="link-grid" id="grid-O"></div>
+  </div>
+
+  <div class="add-form">
+    <div>
+      <div class="form-label">テキスト</div>
+      <input type="text" id="add-label" placeholder="表示するテキスト">
+    </div>
+    <div>
+      <div class="form-label">URL</div>
+      <input type="url" id="add-url" placeholder="https://...">
+    </div>
+    <div>
+      <div class="form-label">追加先</div>
+      <select id="add-pool">
+        <option value="S">星色ステディ</option>
+        <option value="H">ハートビート音楽院</option>
+        <option value="O">ほか</option>
+      </select>
+    </div>
+    <button type="button" class="submit-btn" id="add-submit-btn">追加する</button>
+    <div class="add-status" id="add-status"></div>
+  </div>
+
+  <div class="data-box">
+    <div class="data-section">
+      <div class="data-label">保存用コード(コピーして控えてください)</div>
+      <div class="data-row">
+        <textarea id="export-text" rows="2" readonly></textarea>
+        <button class="small-btn" id="copy-btn">コピー</button>
+      </div>
+    </div>
+    <div class="data-section">
+      <div class="data-label">保存用コードを読み込む</div>
+      <div class="data-row">
+        <textarea id="import-text" rows="2" placeholder="保存用コードを貼り付け"></textarea>
+        <div class="data-btn-col">
+          <button class="small-btn" id="paste-btn">貼付</button>
+          <button class="small-btn" id="import-btn">読込</button>
+        </div>
+      </div>
+    </div>
+    <button class="reset-btn" id="reset-btn">追加したリンクをすべてリセット</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const POOL_COLOR = { S: '#5BBAF8', H: '#FF88B6', O: '#4CAF91' };
+
+const DEFAULT_LINKS = {
+  S: [
+    { label: 'ログイン', url: 'https://hoshikare.jp/login.php' },
+    { label: 'ホーム', url: 'https://hoshikare.jp/usr/index.php' },
+    { label: 'サポートチャット', url: 'https://hoshikare.jp/usr/support/message.php' },
+    { label: '受信BOX', url: 'https://hoshikare.jp/usr/messageBox.php' },
+    { label: '出会い編・恋人編', url: 'https://hoshikare.jp/usr/messageBox.php?type=4' },
+    { label: '開催中イベント', url: 'https://hoshikare.jp/usr/messageBox.php?type=5' },
+    { label: '終了イベント', url: 'https://hoshikare.jp/usr/messageBox.php?type=3' },
+    { label: '公式サイト', url: 'https://hoshikare.jp/' },
+    { label: '公式SNS案内', url: 'https://hoshiirosteady.com/' },
+    { label: '公式オンラインショップ', url: 'https://hoshikareshop.jp/' },
+    { label: '全商品', url: 'https://hoshikareshop.jp/collections/all' },
+  ],
+  H: [
+    { label: 'ログイン', url: 'https://heartbeat-academy.com/login.php' },
+    { label: 'ホーム', url: 'https://heartbeat-academy.com/usr/index.php' },
+    { label: 'サポートチャット', url: 'https://heartbeat-academy.com/usr/support/message.php' },
+    { label: '受信BOX', url: 'https://heartbeat-academy.com/usr/messageBox.php' },
+    { label: '終了イベント', url: 'https://heartbeat-academy.com/usr/messageBox.php?type=3' },
+  ],
+  O: [],
+};
+
+const POOLS = ['S', 'H', 'O'];
+const STORAGE_KEY = 'link00_custom_links';
+let customLinks = { S: [], H: [], O: [] };
+
+function normalizeLinks(obj) {
+  const out = { S: [], H: [], O: [] };
+  POOLS.forEach(p => { if (obj && Array.isArray(obj[p])) out[p] = obj[p]; });
+  return out;
+}
+function loadCustom() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    customLinks = normalizeLinks(saved);
+  } catch (e) {
+    customLinks = { S: [], H: [], O: [] };
+  }
+}
+function saveCustom() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(customLinks));
+}
+function encodeSave() {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(customLinks))));
+}
+function decodeSave(str) {
+  try {
+    const obj = JSON.parse(decodeURIComponent(escape(atob(str.trim()))));
+    if (!obj || typeof obj !== 'object') return null;
+    return normalizeLinks(obj);
+  } catch (e) {
+    return null;
+  }
+}
+
+// ボタンの文字数が多い場合は2列分の幅(span 2)にする
+function needsWide(label) { return label.length >= 9; }
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1500);
+}
+
+function renderLinks() {
+  POOLS.forEach(pool => {
+    const grid = document.getElementById('grid-' + pool);
+    const all = [...DEFAULT_LINKS[pool], ...customLinks[pool]];
+    grid.innerHTML = all.map(link => `
+      <a class="link-btn${needsWide(link.label) ? ' wide' : ''}" style="background:${POOL_COLOR[pool]};" href="${link.url}" target="_blank" rel="noopener">${link.label}</a>
+    `).join('');
+  });
+  // 「ほか」は登録されているリンクがある場合のみ表示
+  document.getElementById('section-O').style.display = customLinks.O.length > 0 ? '' : 'none';
+}
+
+function refreshExportText() {
+  document.getElementById('export-text').value = encodeSave();
+}
+
+document.getElementById('add-submit-btn').addEventListener('click', () => {
+  const label = document.getElementById('add-label').value.trim();
+  const url = document.getElementById('add-url').value.trim();
+  const pool = document.getElementById('add-pool').value;
+  const statusEl = document.getElementById('add-status');
+
+  if (!label) { statusEl.className = 'add-status err'; statusEl.textContent = 'テキストを入力してください。'; return; }
+  if (!/^https?:\/\/.+/.test(url)) { statusEl.className = 'add-status err'; statusEl.textContent = 'URLを正しく入力してください(http://またはhttps://から)。'; return; }
+
+  customLinks[pool].push({ label, url });
+  saveCustom();
+  renderLinks();
+  refreshExportText();
+
+  document.getElementById('add-label').value = '';
+  document.getElementById('add-url').value = '';
+  statusEl.className = 'add-status ok';
+  statusEl.textContent = '追加しました。';
+});
+
+document.getElementById('copy-btn').addEventListener('click', () => {
+  const text = document.getElementById('export-text').value;
+  if (!text) { showToast('追加されたリンクがありません'); return; }
+  navigator.clipboard.writeText(text).then(() => showToast('コピーしました'));
+});
+document.getElementById('paste-btn').addEventListener('click', () => {
+  navigator.clipboard.readText().then(text => {
+    document.getElementById('import-text').value = text;
+  }).catch(() => showToast('クリップボードを読み取れませんでした'));
+});
+document.getElementById('import-btn').addEventListener('click', () => {
+  const raw = document.getElementById('import-text').value;
+  if (!raw.trim()) { showToast('コードを入力してください'); return; }
+  const decoded = decodeSave(raw);
+  if (!decoded) { showToast('コードを読み取れませんでした'); return; }
+  if ((customLinks.S.length + customLinks.H.length + customLinks.O.length) > 0) {
+    if (!confirm('現在追加されているリンクを、読み込んだコードの内容で置き換えます。よろしいですか？')) return;
+  }
+  customLinks = decoded;
+  saveCustom();
+  renderLinks();
+  refreshExportText();
+  showToast('読み込みました');
+});
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (!confirm('追加したリンクをすべて削除します。よろしいですか？この操作は元に戻せません。')) return;
+  customLinks = { S: [], H: [], O: [] };
+  saveCustom();
+  renderLinks();
+  refreshExportText();
+  showToast('リセットしました');
+});
+
+loadCustom();
+renderLinks();
+refreshExportText();
+</script>
+</body>
+</html>
