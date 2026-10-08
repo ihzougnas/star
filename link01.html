@@ -280,9 +280,18 @@ function decodeSave(str) {
 }
 
 // ボタンの文字数に応じて2列分・3列分(最大)の幅にする。それでも収まらない場合は折り返しで対応。
+// 全角文字を1、半角文字(英数字・記号)を約0.55として表示幅を概算する
+function estimateWidth(label) {
+  let w = 0;
+  for (const ch of label) {
+    w += /[\u3000-\u9FFF\uFF00-\uFFEF]/.test(ch) ? 1 : 0.55;
+  }
+  return w;
+}
 function spanClass(label) {
-  if (label.length >= 20) return 'full';
-  if (label.length >= 9) return 'wide';
+  const w = estimateWidth(label);
+  if (w >= 20) return 'full';
+  if (w >= 9) return 'wide';
   return '';
 }
 
