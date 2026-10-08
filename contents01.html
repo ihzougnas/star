@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ぼくのかんがえたさいきょうのツール</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    background: #f5f5f0;
+    color: #1a1a1a;
+    padding: 32px 16px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+  .container {
+    width: 100%;
+    max-width: 560px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .intro {
+    font-size: 12.5px;
+    color: #888;
+    line-height: 1.8;
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .tool-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .tool-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .tool-btn {
+    display: inline-block;
+    flex: 1;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    background: #f5f5f0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 11px 12px;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .tool-btn:hover { background: #ececec; }
+  .new-window-link {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #aaa;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(170,170,170,0.4);
+    white-space: nowrap;
+  }
+  .new-window-link:hover { color: #888; }
+  .tool-desc {
+    font-size: 12.5px;
+    color: #888;
+    line-height: 1.8;
+  }
+
+  @media (max-width: 480px) {
+    .tool-header { flex-wrap: wrap; }
+    .tool-btn { flex: 1 1 100%; }
+    .new-window-link { margin-left: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>ぼくのかんがえたさいきょうのツール</h1>
+  <p class="intro">
+    PC・スマホどちらからも閲覧・利用できます。不具合の報告やご要望はDM等からどうぞ。
+  </p>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <a class="tool-btn" href="https://ihzougnas.github.io/star/counter01.html">連投用100字カウンター</a>
+      <a class="new-window-link" href="https://ihzougnas.github.io/star/counter01.html" target="_blank" rel="noopener">別窓で開く</a>
+    </div>
+    <p class="tool-desc">
+      入力された文章を【99字+「→」】の合計100字ごとに分割するツール。<br>
+      コピー補助機能付き。
+    </p>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <a class="tool-btn" href="https://ihzougnas.github.io/star/checker01.html">20日用配布期間チェッカー</a>
+      <a class="new-window-link" href="https://ihzougnas.github.io/star/checker01.html" target="_blank" rel="noopener">別窓で開く</a>
+    </div>
+    <p class="tool-desc">
+      星色ジュエル・ビートジェムの配布期間を確認するためのツール。<br>
+      デフォルトでは星色ジュエル用のみ表示、「＋」を押すとビートジェム用も表示できます。<br>
+      簡易履歴機能付き。
+    </p>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <a class="tool-btn" href="https://ihzougnas.github.io/star/roulette01.html">星色ルーレット</a>
+      <a class="new-window-link" href="https://ihzougnas.github.io/star/roulette01.html" target="_blank" rel="noopener">別窓で開く</a>
+    </div>
+    <p class="tool-desc">
+      全ステディ27名+1名のお名前をルーレットにより選出するツール。<br>
+      重複なし版 / 重複あり版で切り替え可能。
+    </p>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <a class="tool-btn" href="https://ihzougnas.github.io/star/roulette03.html">音楽院ルーレット</a>
+      <a class="new-window-link" href="https://ihzougnas.github.io/star/roulette03.html" target="_blank" rel="noopener">別窓で開く</a>
+    </div>
+    <p class="tool-desc">
+      全カレ5名+1名のお名前をルーレットにより選出するツール。<br>
+      重複なし版 / 重複あり版で切り替え可能。
+    </p>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <a class="tool-btn" href="https://ihzougnas.github.io/star/calendar01.html">星色カレンダー</a>
+      <a class="new-window-link" href="https://ihzougnas.github.io/star/calendar01.html" target="_blank" rel="noopener">別窓で開く</a>
+    </div>
+    <p class="tool-desc">
+      全ステディ27名の誕生日、デビュー日まであと何日かを確認するための補助カレンダー。<br>
+      誕生日・デビュー日・デビュー順でソート可能なリスト付き。
+    </p>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <a class="tool-btn" href="https://ihzougnas.github.io/star/calendar03.html">音楽院カレンダー</a>
+      <a class="new-window-link" href="https://ihzougnas.github.io/star/calendar03.html" target="_blank" rel="noopener">別窓で開く</a>
+    </div>
+    <p class="tool-desc">
+      全カレ5名の誕生日、デビュー日まであと何日かを確認するための補助カレンダー。<br>
+      誕生日・デビュー日・デビュー順でソート可能なリスト付き。
+    </p>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <a class="tool-btn" href="https://ihzougnas.github.io/star/anniversary03.html">記念日カレンダー</a>
+      <a class="new-window-link" href="https://ihzougnas.github.io/star/anniversary03.html" target="_blank" rel="noopener">別窓で開く</a>
+    </div>
+    <p class="tool-desc">
+      全ステディ27名+全カレ5名との記念日を管理できるツール。<br>
+      保存/読込機能付き。
+    </p>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <a class="tool-btn" href="https://ihzougnas.github.io/star/link01.html">リンク集</a>
+      <a class="new-window-link" href="https://ihzougnas.github.io/star/link01.html" target="_blank" rel="noopener">別窓で開く</a>
+    </div>
+    <p class="tool-desc">
+      星色ステディ・ハートビート音楽院の各種リンク集。<br>
+      自由に追加できるので、恋人編や開催中のイベント等へのリンクを登録すると便利。<br>
+      保存/読込機能付き。
+    </p>
+  </div>
+</div>
+</body>
+</html>
