@@ -318,13 +318,10 @@ function renderLinks() {
 
 const POOL_LABEL = { S: '星色ステディ', H: 'ハートビート音楽院', O: 'ほか' };
 
-const POOL_TAG = { S: '@S', H: '@H', O: '@O' };
-const TAG_POOL = { S: 'S', H: 'H', O: 'O' };
-
 function toBracketText() {
   const lines = [];
   POOLS.forEach(pool => {
-    customLinks[pool].forEach(l => lines.push(`${POOL_TAG[pool]}[${l.label}](${l.url})`));
+    customLinks[pool].forEach(l => lines.push(`${pool}[${l.label}](${l.url})`));
   });
   return lines.join('\n');
 }
@@ -334,14 +331,14 @@ function refreshExportText() {
 }
 document.getElementById('export-format').addEventListener('change', refreshExportText);
 
-// @S[タイトル](URL) 形式(カテゴリ記号は省略可)のテキストを、カンマまたは改行区切りで読み取る。
+// S[タイトル](URL) 形式(カテゴリ記号のアルファベット1文字は省略可)のテキストを、改行区切りで読み取る。
 // 記号が無い場合は「追加先」で選んでいるカテゴリに割り当てる。
 function parseBracketText(raw, fallbackPool) {
-  const re = /(?:@([SHO]))?\[([^\]]+)\]\(([^)]+)\)/g;
+  const re = /([SHO])?\[([^\]]+)\]\(([^)]+)\)/g;
   const result = { S: [], H: [], O: [] };
   let m;
   while ((m = re.exec(raw)) !== null) {
-    const pool = m[1] ? TAG_POOL[m[1]] : fallbackPool;
+    const pool = m[1] || fallbackPool;
     const label = m[2].trim(), url = m[3].trim();
     if (label && /^https?:\/\/.+/.test(url)) result[pool].push({ label, url });
   }
@@ -450,7 +447,7 @@ document.getElementById('import-btn').addEventListener('click', () => {
     return;
   }
 
-  // @S[タイトル](URL) 形式のテキスト:記号があればそのカテゴリへ、無ければ「追加先」で選んだカテゴリへ追加する
+  // S[タイトル](URL) 形式のテキスト:記号があればそのカテゴリへ、無ければ「追加先」で選んだカテゴリへ追加する
   const fallbackPool = document.getElementById('add-pool').value;
   const parsed = parseBracketText(raw, fallbackPool);
   const total = parsed.S.length + parsed.H.length + parsed.O.length;
