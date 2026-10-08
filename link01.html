@@ -281,7 +281,7 @@ function decodeSave(str) {
 
 // ボタンの文字数に応じて2列分・3列分(最大)の幅にする。それでも収まらない場合は折り返しで対応。
 function spanClass(label) {
-  if (label.length >= 16) return 'full';
+  if (label.length >= 20) return 'full';
   if (label.length >= 9) return 'wide';
   return '';
 }
@@ -309,26 +309,34 @@ function renderLinks() {
 
 const POOL_LABEL = { S: '星色ステディ', H: 'ハートビート音楽院', O: 'ほか' };
 
-function toBracketText(links) {
-  return links.map(l => `[${l.label}](${l.url})`).join(',\n');
+const POOL_TAG = { S: '@S', H: '@H', O: '@O' };
+const TAG_POOL = { S: 'S', H: 'H', O: 'O' };
+
+function toBracketText() {
+  const lines = [];
+  POOLS.forEach(pool => {
+    customLinks[pool].forEach(l => lines.push(`${POOL_TAG[pool]}[${l.label}](${l.url})`));
+  });
+  return lines.join('\n');
 }
 function refreshExportText() {
   const fmt = document.getElementById('export-format').value;
-  if (fmt === 'plain') {
-    const all = [...customLinks.S, ...customLinks.H, ...customLinks.O];
-    document.getElementById('export-text').value = toBracketText(all);
-  } else {
-    document.getElementById('export-text').value = encodeSave();
-  }
+  document.getElementById('export-text').value = fmt === 'plain' ? toBracketText() : encodeSave();
 }
 document.getElementById('export-format').addEventListener('change', refreshExportText);
 
-// [タイトル](URL) 形式のテキストから、カンマまたは改行区切りのリンクを読み取る
-function parseBracketText(raw) {
-  const matches = [...raw.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)];
-  return matches
-    .map(m => ({ label: m[1].trim(), url: m[2].trim() }))
-    .filter(l => l.label && /^https?:\/\/.+/.test(l.url));
+// @S[タイトル](URL) 形式(カテゴリ記号は省略可)のテキストを、カンマまたは改行区切りで読み取る。
+// 記号が無い場合は「追加先」で選んでいるカテゴリに割り当てる。
+function parseBracketText(raw, fallbackPool) {
+  const re = /(?:@([SHO]))?\[([^\]]+)\]\(([^)]+)\)/g;
+  const result = { S: [], H: [], O: [] };
+  let m;
+  while ((m = re.exec(raw)) !== null) {
+    const pool = m[1] ? TAG_POOL[m[1]] : fallbackPool;
+    const label = m[2].trim(), url = m[3].trim();
+    if (label && /^https?:\/\/.+/.test(url)) result[pool].push({ label, url });
+  }
+  return result;
 }
 
 let editMode = false;
@@ -433,16 +441,17 @@ document.getElementById('import-btn').addEventListener('click', () => {
     return;
   }
 
-  // [タイトル](URL) 形式のテキスト:「追加先」で選んだカテゴリにまとめて追加する
-  const newLinks = parseBracketText(raw);
-  if (newLinks.length === 0) { showToast('コードを読み取れませんでした'); return; }
-  const pool = document.getElementById('add-pool').value;
-  customLinks[pool].push(...newLinks);
+  // @S[タイトル](URL) 形式のテキスト:記号があればそのカテゴリへ、無ければ「追加先」で選んだカテゴリへ追加する
+  const fallbackPool = document.getElementById('add-pool').value;
+  const parsed = parseBracketText(raw, fallbackPool);
+  const total = parsed.S.length + parsed.H.length + parsed.O.length;
+  if (total === 0) { showToast('コードを読み取れませんでした'); return; }
+  POOLS.forEach(pool => { customLinks[pool].push(...parsed[pool]); });
   saveCustom();
   renderLinks();
   refreshExportText();
   renderEditPanel();
-  showToast(`${POOL_LABEL[pool]}に${newLinks.length}件追加しました`);
+  showToast(`${total}件追加しました`);
 });
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (!confirm('追加したリンクをすべて削除します。よろしいですか？この操作は元に戻せません。')) return;
