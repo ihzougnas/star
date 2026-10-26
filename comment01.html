@@ -272,15 +272,31 @@ function bookmarkletMain(CFG) {
     return t;
   }
 
-  async function finish(text, summary) {
-    var ok = await copy(text);
-    if (ok) { toast('コピーしました\n' + (summary || preview(text))); } else { showFallback(text); }
+  /* ユーザー操作の直後に呼ぶ。コピーする文章は後から確定してよい形で書き込みを予約するため、
+     取得に時間がかかっても(全員分など)スマホでコピーが拒否されにくい。非対応の環境ではnullを返す。 */
+  function copyLater(textPromise) {
+    if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem) {
+      try {
+        var blobPromise = textPromise.then(function (t) { return new Blob([t], { type: 'text/plain' }); });
+        blobPromise.catch(function () { });
+        var item = new ClipboardItem({ 'text/plain': blobPromise });
+        return navigator.clipboard.write([item]).then(function () { return true; }, function () { return false; });
+      } catch (e) { return null; }
+    }
+    return null;
+  }
+
+  async function deliver(textPromise, summaryFn) {
+    var pending = copyLater(textPromise);
+    var text = await textPromise;
+    var ok = pending ? await pending : false;
+    if (!ok) { ok = await copy(text); }
+    if (ok) { toast('コピーしました\n' + (summaryFn ? summaryFn(text) : preview(text))); } else { showFallback(text); }
   }
 
   async function run(switchUrl) {
     try {
-      var t = await getComment(switchUrl);
-      await finish(t);
+      await deliver(getComment(switchUrl));
     } catch (e) {
       toast(String((e && e.message) || e), true);
     }
@@ -288,7 +304,7 @@ function bookmarkletMain(CFG) {
 
   async function runAll() {
     var cur = '';
-    try {
+    var work = (async function () {
       var out = [];
       for (var i = 0; i < chars.length; i++) {
         cur = chars[i].n;
@@ -297,7 +313,10 @@ function bookmarkletMain(CFG) {
         out.push('【' + cur + '】\n' + t);
         if (i < chars.length - 1) { await sleep(800); }
       }
-      await finish(dateHeader() + '\n' + out.join('\n\n') + '\n\n', chars.length + '名分');
+      return dateHeader() + '\n' + out.join('\n\n') + '\n\n';
+    })();
+    try {
+      await deliver(work, function () { return chars.length + '名分'; });
     } catch (e) {
       toast((cur ? cur + ':' : '') + String((e && e.message) || e), true);
     }
