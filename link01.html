@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
 <title>リンク集</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -309,7 +310,7 @@ function renderLinks() {
     const grid = document.getElementById('grid-' + pool);
     const all = [...DEFAULT_LINKS[pool], ...customLinks[pool]];
     grid.innerHTML = all.map(link => `
-      <a class="link-btn ${spanClass(link.label)}" style="background:${POOL_COLOR[pool]};" href="${link.url}" target="_blank" rel="noopener">${link.label}</a>
+      <a class="link-btn ${spanClass(link.label)}" style="background:${POOL_COLOR[pool]};" href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}</a>
     `).join('');
   });
   // 「ほか」は登録されているリンクがある場合のみ表示
