@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>キャンペーン応募・送付管理ツール</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    background: #f5f5f0;
+    color: #1a1a1a;
+    padding: 24px 16px 40px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+  .container { width: 100%; max-width: 560px; min-width: 0; }
+  h1 { font-size: 19px; font-weight: 700; text-align: center; margin-bottom: 14px; }
+  .jst-note { font-size: 11px; color: #aaa; text-align: center; margin: -8px 0 14px; line-height: 1.6; }
+
+  .add-toggle {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    background: #5BBAF8;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 12px;
+  }
+  .add-toggle:hover { background: #3aa8f0; }
+  .add-toggle.open { background: #fff; color: #666; border: 1px solid #ccc; }
+  .add-toggle.open:hover { background: #eee; }
+
+  .card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+
+  /* フォーム */
+  .field { margin-bottom: 16px; }
+  .field-label { font-size: 12px; color: #888; font-weight: 500; margin-bottom: 6px; }
+  input[type="text"], select {
+    font-family: inherit;
+    font-size: 16px;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    color: #1a1a1a;
+    background: #fff;
+    min-width: 0;
+  }
+  input.full { width: 100%; }
+  .date-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .date-row select { padding: 8px 6px; }
+  .sep { font-size: 13px; color: #888; margin-right: 4px; }
+  /* 応募受付期間: 幅が十分あるときは年月日と時刻を同じ行に並べ、足りないときは折り返す */
+  .dl-row { display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; }
+  .time-wrap { display: inline-flex; align-items: center; gap: 5px; }
+  .time-input { width: 84px; text-align: center; }
+  .muted { font-size: 11.5px; color: #aaa; line-height: 1.6; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .toggle-chip {
+    padding: 7px 13px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 99px;
+    background: #fff;
+    color: #666;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .toggle-chip.on { background: #5BBAF8; border-color: #5BBAF8; color: #fff; font-weight: 700; }
+
+  .target-group { margin-bottom: 12px; }
+  .target-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .target-name { font-size: 12.5px; font-weight: 700; }
+  .target-count { font-size: 11px; color: #aaa; margin-right: auto; }
+  .mini-btn {
+    padding: 3px 9px;
+    font-size: 11px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    color: #777;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .mini-btn:hover { background: #eee; }
+  .target-chip {
+    padding: 5px 10px;
+    font-size: 12px;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-left-width: 5px;
+    border-radius: 8px;
+    background: #f7f7f5;
+    color: #888;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .target-chip.on { font-weight: 700; }
+
+  /* 送付時期(カレンダー+期間ボタン) */
+  .send-picker { border: 1px solid #e8e8e4; border-radius: 10px; padding: 10px; background: #fcfcfa; }
+  .cal-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 6px; }
+  .cal-title { font-size: 13px; font-weight: 700; min-width: 7em; text-align: center; }
+  .cal-nav-btn {
+    width: 28px; height: 28px; border: 1px solid #ccc; border-radius: 6px; background: #fff;
+    color: #666; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .cal-nav-btn:hover { background: #eee; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; max-width: 340px; margin: 0 auto; }
+  .cal-dow { text-align: center; font-size: 10.5px; color: #aaa; padding-bottom: 2px; }
+  .cal-dow.sun { color: #d44a4a; }
+  .cal-dow.sat { color: #4a7fd4; }
+  .cal-day {
+    height: 32px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    color: #1a1a1a;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .cal-day:hover { background: #eef6fd; }
+  .cal-day.today { border-color: #bcd9ef; }
+  .cal-day.on { background: #5BBAF8; border-color: #5BBAF8; color: #fff; font-weight: 700; }
+  .cal-blank { height: 32px; }
+  .period-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+  .period-btn {
+    padding: 7px 12px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .period-btn:hover { background: #f0f0f0; }
+  .period-btn.on { background: #5BBAF8; border-color: #5BBAF8; color: #fff; font-weight: 700; }
+  .year-select { font-size: 14px; padding: 6px 6px; }
+  .send-summary { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12.5px; color: #555; }
+  .send-summary .mini-btn { margin-left: auto; }
+
+  .form-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .btn {
+    padding: 11px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn:hover { background: #eee; }
+  .btn.primary { flex: 1; background: #5BBAF8; border-color: #5BBAF8; color: #fff; }
+  .btn.primary:hover { background: #3aa8f0; }
+  .form-msg { font-size: 12px; color: #c0392b; min-height: 16px; margin-top: 8px; }
+
+  /* 並び順 */
+  .sort-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 12px; color: #888; }
+  .sort-bar select { font-size: 13px; padding: 5px 8px; }
+  .dir-btn {
+    height: 32px; padding: 0 12px; border: 1px solid #ccc; border-radius: 8px; background: #fff;
+    color: #555; font-size: 12.5px; cursor: pointer; font-family: inherit; white-space: nowrap;
+  }
+  .dir-btn:hover { background: #eee; }
+
+  /* キャンペーンのカード */
+  .empty-message {
+    text-align: center;
+    font-size: 12.5px;
+    color: #aaa;
+    padding: 30px 10px;
+    border: 1px dashed #ddd;
+    border-radius: 10px;
+    line-height: 1.8;
+    margin-bottom: 14px;
+  }
+  .camp-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 11px 12px;
+    margin-bottom: 8px;
+  }
+  .camp-main { flex: 1; min-width: 0; }
+  .camp-side { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+  .camp-title { font-size: 15px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+  .title-tags { margin-left: 6px; font-size: 12px; font-weight: 400; }
+  .status-badge {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .last-banner {
+    background: #c0392b;
+    color: #fff;
+    text-align: center;
+    border-radius: 10px;
+    padding: 8px 8px;
+    margin: 6px 0 4px;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+  .last-banner small { display: block; font-size: 11.5px; font-weight: 600; opacity: 0.92; margin-top: 1px; }
+  .row { display: flex; gap: 8px; align-items: baseline; padding: 2px 0; font-size: 13px; line-height: 1.6; }
+  .row-label { flex-shrink: 0; width: 4.6em; font-size: 11.5px; color: #999; }
+  .row-body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .row-body.dim { color: #999; }
+  .pill {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 1px 9px;
+    border-radius: 99px;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  .pill.normal { background: #eaf4fd; color: #2a7fc0; }
+  .pill.near { background: #fff1d6; color: #b86e00; }
+  .pill.today { background: #ffe0d6; color: #c0392b; }
+  .pill.over { background: #fbe3e3; color: #c0392b; }
+  .tag {
+    display: inline-block;
+    font-size: 11.5px;
+    padding: 1px 7px;
+    border-radius: 6px;
+    margin: 0 3px 2px 0;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: #f3f3f0;
+    color: #555;
+    font-weight: 400;
+    vertical-align: 1px;
+  }
+  .tag.char { font-weight: 700; }
+  .icon-btn {
+    padding: 4px 11px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    color: #555;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .icon-btn:hover { background: #eee; }
+
+  /* 送付完了(目立たない色・一覧と分離) */
+  .done-section { margin-top: 26px; }
+  .done-section summary { font-size: 12px; color: #aaa; cursor: pointer; padding: 6px 2px; }
+  .done-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #f1f1ee;
+    border: 1px solid #e7e7e3;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    color: #a0a0a0;
+  }
+  .done-card .camp-title { font-size: 13px; font-weight: 600; color: #8a8a8a; }
+  .done-card .row { font-size: 12px; padding: 1px 0; }
+  .done-card .row-label { color: #b5b5b5; }
+  .done-card .tag { background: #eaeae6; color: #9a9a9a; border-color: transparent; }
+  .done-card .status-badge { background: #b9bbbd; }
+  .done-card .icon-btn { color: #999; border-color: #ddd; background: #f8f8f6; }
+
+  /* 保存・読込 */
+  .data-box { margin-top: 26px; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 14px 16px; }
+  .data-section { margin-bottom: 14px; }
+  .data-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .data-row { display: flex; gap: 6px; align-items: stretch; }
+  .data-box textarea {
+    flex: 1; min-width: 0;
+    font-size: 11.5px; font-family: monospace; padding: 8px; border: 1px solid #ccc;
+    border-radius: 8px; resize: vertical; color: #1a1a1a;
+  }
+  .data-btn-col { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+  .small-btn {
+    padding: 8px 12px; font-size: 12.5px; font-weight: 500; border: 1px solid #ccc; border-radius: 8px;
+    background: #fff; color: #555; cursor: pointer; font-family: inherit; white-space: nowrap; flex: 1;
+  }
+  .small-btn:hover { background: #eee; }
+  .reset-btn {
+    width: 100%; padding: 9px; font-size: 13px; font-weight: 600; border: 1px solid #e0a0a0;
+    border-radius: 8px; background: #fff5f5; color: #c0392b; cursor: pointer; font-family: inherit;
+  }
+  .reset-btn:hover { background: #ffe8e8; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: #fff; font-size: 13px; padding: 7px 18px; border-radius: 99px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 10; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>キャンペーン応募・送付管理ツール</h1>
+  <div class="jst-note" id="jst-note" style="display:none;"></div>
+
+  <button type="button" class="add-toggle" id="add-toggle">＋ キャンペーンを登録</button>
+
+  <div class="card" id="form-card" style="display:none;">
+    <div class="card-title" id="form-title">キャンペーンを登録</div>
+
+    <div class="field">
+      <div class="field-label">キャンペーンタイトル</div>
+      <input type="text" class="full" id="f-title" placeholder="キャンペーン名を入力" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <div class="field-label">応募受付期間(この日時まで・空欄でも登録できます)</div>
+      <div class="dl-row">
+        <div id="f-dl-date"></div>
+        <span class="time-wrap">
+          <input type="text" class="time-input" id="f-dl-time" value="26:59" inputmode="numeric" maxlength="5" autocomplete="off">
+          <span class="sep">まで</span>
+        </span>
+      </div>
+      <div class="muted" style="margin-top:6px;">時刻は自由に変更できます。月と日を空にすると、期間なしで登録できます。</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">送付されるアイテムの種類</div>
+      <div class="chips" id="item-chips"></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">対象のステディ・カレ(複数選択できます)</div>
+      <div class="target-group">
+        <div class="target-head">
+          <span class="target-name">星色ステディ</span>
+          <span class="target-count" id="count-S"></span>
+          <button type="button" class="mini-btn" data-pool-act="all" data-pool="S">全員選択</button>
+          <button type="button" class="mini-btn" data-pool-act="none" data-pool="S">全解除</button>
+        </div>
+        <div class="chips" id="chips-S"></div>
+      </div>
+      <div class="target-group">
+        <div class="target-head">
+          <span class="target-name">ハートビート音楽院</span>
+          <span class="target-count" id="count-H"></span>
+          <button type="button" class="mini-btn" data-pool-act="all" data-pool="H">全員選択</button>
+          <button type="button" class="mini-btn" data-pool-act="none" data-pool="H">全解除</button>
+        </div>
+        <div class="chips" id="chips-H"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">送付時期(日付を選択、または期間を選択)</div>
+      <div class="send-picker" id="send-picker">
+        <div class="cal-nav">
+          <button type="button" class="cal-nav-btn" id="cal-prev" aria-label="前月">&lt;</button>
+          <span class="cal-title" id="cal-title"></span>
+          <button type="button" class="cal-nav-btn" id="cal-next" aria-label="翌月">&gt;</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="period-row">
+          <button type="button" class="period-btn" data-period="early">上旬以降</button>
+          <button type="button" class="period-btn" data-period="mid">中旬以降</button>
+          <button type="button" class="period-btn" data-period="late">下旬以降</button>
+          <button type="button" class="period-btn" id="year-btn"></button>
+          <select class="year-select" id="year-select" aria-label="対象年"></select>
+        </div>
+        <div class="send-summary">
+          <span id="send-summary"></span>
+          <button type="button" class="mini-btn" id="send-clear">選択解除</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">状況</div>
+      <select id="f-status"></select>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn primary" id="f-submit">登録する</button>
+      <button type="button" class="btn" id="f-cancel">キャンセル</button>
+    </div>
+    <div class="form-msg" id="f-msg"></div>
+  </div>
+
+  <div class="sort-bar" id="sort-bar" style="display:none;">
+    <span>並び順</span>
+    <select id="sort-mode">
+      <option value="status">ステータス順</option>
+      <option value="send">送付時期順</option>
+      <option value="reg">登録順</option>
+    </select>
+    <button type="button" class="dir-btn" id="sort-dir" title="昇順(押すと降順)" aria-label="昇順">昇順</button>
+  </div>
+
+  <div id="active-list"></div>
+
+  <details class="done-section" id="done-section">
+    <summary id="done-summary">送付完了</summary>
+    <div id="done-list"></div>
+  </details>
+
+  <div class="data-box">
+    <div class="data-section">
+      <div class="data-label">保存用コード(コピーして控えてください)</div>
+      <div class="data-row">
+        <textarea id="export-text" rows="2" readonly></textarea>
+        <button class="small-btn" id="copy-btn" style="flex:0 0 auto;">コピー</button>
+      </div>
+    </div>
+    <div class="data-section">
+      <div class="data-label">保存用コードを読み込む</div>
+      <div class="data-row">
+        <textarea id="import-text" rows="2" placeholder="保存用コードを貼り付け"></textarea>
+        <div class="data-btn-col">
+          <button class="small-btn" id="paste-btn">貼付</button>
+          <button class="small-btn" id="import-btn">読込</button>
+        </div>
+      </div>
+    </div>
+    <button class="reset-btn" id="reset-btn">すべてリセット</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   定数・マスターデータ
+   ============================================================ */
+const ITEMS = ['ダイアリー', 'ボイス', 'リアルグッズ', 'その他'];
+const STATUSES = [
+  { key: 'before',    label: '応募前',     color: '#E8A33D' },
+  { key: 'applied',   label: '応募済み',   color: '#5BBAF8' },
+  { key: 'delayed',   label: '遅延中',     color: '#E0575B' },
+  { key: 'done',      label: '送付完了',   color: '#9AA0A6' },
+];
+const STATUS_BY_KEY = {};
+STATUSES.forEach(s => { STATUS_BY_KEY[s.key] = s; });
+const SEND_KEYS = ['none', 'date', 'early', 'mid', 'late', 'year'];
+const STATUS_KEYS = STATUSES.map(s => s.key);
+/* 保存コード用の状況の番号。過去に使っていた「送付予定日」(番号2)は廃止したが、
+   既存の保存コードを読めるよう番号は変えない(読込時は「応募済み」として扱う) */
+const STATUS_CODE = ['before', 'applied', 'scheduled', 'delayed', 'done'];
+const PERIOD_LABEL = { early: '上旬以降', mid: '中旬以降', late: '下旬以降' };
+
+const POOL_INFO = {
+  S: { label: '星色ステディ', color: '#5BBAF8' },
+  H: { label: 'ハートビート音楽院', color: '#FF88B6' },
+};
+const CHARACTERS = [
+  { pool: 'S', idx: 1,  name: '氷室蓮',     color: '#7597E1' },
+  { pool: 'S', idx: 2,  name: '白鳥恭治',   color: '#DD91EB' },
+  { pool: 'S', idx: 3,  name: '早乙女天哉', color: '#F7B956' },
+  { pool: 'S', idx: 4,  name: 'シオン',     color: '#65C2E4' },
+  { pool: 'S', idx: 5,  name: '大我',       color: '#DD666C' },
+  { pool: 'S', idx: 6,  name: '桐生隼人',   color: '#505DA1' },
+  { pool: 'S', idx: 7,  name: '月輪るいと', color: '#CE5973' },
+  { pool: 'S', idx: 8,  name: '滝リョーマ', color: '#4B879F' },
+  { pool: 'S', idx: 9,  name: 'アーロン',   color: '#64B79B' },
+  { pool: 'S', idx: 10, name: '琉青',       color: '#E38E69' },
+  { pool: 'S', idx: 11, name: '鈴鳴恋詩',   color: '#8D53DB' },
+  { pool: 'S', idx: 12, name: '浅羽湊輔',   color: '#D5BC62' },
+  { pool: 'S', idx: 13, name: '黛',         color: '#C8DAB2' },
+  { pool: 'S', idx: 14, name: '乃楽',       color: '#B25CBF' },
+  { pool: 'S', idx: 15, name: '東条真夜',   color: '#707861' },
+  { pool: 'S', idx: 16, name: 'マルコ',     color: '#EFCCC3' },
+  { pool: 'S', idx: 17, name: '滝マコト',   color: '#FFF552' },
+  { pool: 'S', idx: 18, name: '森下楓',     color: '#FEDCE8' },
+  { pool: 'S', idx: 19, name: '鷹美銀',     color: '#F8F5E4' },
+  { pool: 'S', idx: 20, name: '獏.',        color: '#DEBBFB' },
+  { pool: 'S', idx: 21, name: 'ひかり',     color: '#FF5360' },
+  { pool: 'S', idx: 22, name: '四葉レイジ', color: '#355C5C' },
+  { pool: 'S', idx: 23, name: 'ラヴィ',     color: '#DDE1E2' },
+  { pool: 'S', idx: 24, name: '四葉ケンゴ', color: '#342F31' },
+  { pool: 'S', idx: 25, name: '加賀美枕',   color: '#735F68' },
+  { pool: 'S', idx: 26, name: '阿桜夕陽',   color: '#432045' },
+  { pool: 'S', idx: 27, name: 'Raita',      color: '#217166' },
+  { pool: 'H', idx: 1,  name: '獅堂ケイ',   color: '#BF014E' },
+  { pool: 'H', idx: 2,  name: '漣大和',     color: '#4289BD' },
+  { pool: 'H', idx: 3,  name: '綿谷めぐる', color: '#F5F4F9' },
+  { pool: 'H', idx: 4,  name: '久世幸斗',   color: '#228B22' },
+  { pool: 'H', idx: 5,  name: '柴ムサシ',   color: '#FFE200' },
+];
+function getTextColor(hex) {
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? '#1a1a1a' : '#ffffff';
+}
+const CHAR_BY_CODE = {};
+const POOL_CODES = { S: [], H: [] };
+CHARACTERS.forEach(c => {
+  c.code = c.pool + c.idx;
+  c.text = getTextColor(c.color);
+  CHAR_BY_CODE[c.code] = c;
+  POOL_CODES[c.pool].push(c.code);
+});
+/* 各作品の「その他」(色は作品のカラーコード)。コードは S0 / H0 */
+const OTHER_CODE = { S: 'S0', H: 'H0' };
+['S', 'H'].forEach(p => {
+  CHAR_BY_CODE[OTHER_CODE[p]] = { code: OTHER_CODE[p], pool: p, name: 'その他', color: POOL_INFO[p].color, text: '#ffffff' };
+});
+
+const pad2 = n => String(n).padStart(2, '0');
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+/* ============================================================
+   日付・カウントの計算(すべて日本時間 JST で扱う)
+   ============================================================ */
+const JST_MS = 9 * 3600000;
+
+function nowJst(ms) {
+  const t = ms === undefined ? Date.now() : ms;
+  const d = new Date(t + JST_MS);
+  return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate(), h: d.getUTCHours(), mi: d.getUTCMinutes(), ms: t };
+}
+function calDays(a, b) {
+  return Math.round((Date.UTC(a.y, a.m - 1, a.d) - Date.UTC(b.y, b.m - 1, b.d)) / 86400000);
+}
+function daysInMonth(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+/* 閲覧している端末が日本時間(UTC+9)かどうか */
+function isJstDevice() { return -new Date().getTimezoneOffset() === 540; }
+
+/* 「26:59」のような時刻(0:00〜47:59)を読み取る */
+function parseTime(str) {
+  const s = String(str || '').normalize('NFKC').trim();
+  const m = /^(\d{1,2}):?(\d{2})$/.exec(s);
+  if (!m) return null;
+  const h = Number(m[1]), mi = Number(m[2]);
+  if (h > 47 || mi > 59) return null;
+  return { h, mi, text: pad2(h) + ':' + pad2(mi) };
+}
+/* 応募受付の締切(実時刻ms)。「10/31 26:59」= 11/1 2:59(JST)。期間なしはnull */
+function deadlineMs(dl) {
+  if (!dl) return null;
+  const t = parseTime(dl.t) || { h: 26, mi: 59 };
+  return Date.UTC(dl.y, dl.m - 1, dl.d) + (t.h * 60 + t.mi) * 60000 - JST_MS;
+}
+
+/* 応募受付のカウント(期間なしは state:'none') */
+function appInfo(c, now) {
+  if (!c.dl) return { state: 'none', text: '', tone: 'normal', dlText: '' };
+  const dlText = `${c.dl.y}年${c.dl.m}月${c.dl.d}日 ${c.dl.t}まで`;
+  if (now.ms > deadlineMs(c.dl)) return { state: 'closed', text: '応募受付は終了しました', tone: 'over', dlText };
+  const diff = calDays(c.dl, now);
+  if (diff <= 0) return { state: 'last', text: '本日が応募受付最終日です', tone: 'today', dlText };
+  return { state: 'open', text: `あと${diff}日`, diff, tone: diff <= 3 ? 'near' : 'normal', dlText };
+}
+
+/* 送付時期の基準日(上旬=1日・中旬=11日・下旬=21日、年内=12/31) */
+function sendAnchor(s) {
+  switch (s.type) {
+    case 'date':  return { y: s.y, m: s.m, d: s.d };
+    case 'early': return { y: s.y, m: s.m, d: 1 };
+    case 'mid':   return { y: s.y, m: s.m, d: 11 };
+    case 'late':  return { y: s.y, m: s.m, d: 21 };
+    case 'year':  return { y: s.y, m: 12, d: 31 };
+    default:      return null;
+  }
+}
+function sendLabel(s) {
+  switch (s.type) {
+    case 'date':  return `${s.y}年${s.m}月${s.d}日`;
+    case 'early': case 'mid': case 'late': return `${s.y}年${s.m}月${PERIOD_LABEL[s.type]}`;
+    case 'year':  return `${s.y}年内`;
+    default:      return '未設定';
+  }
+}
+/* 送付時期のカウント。時期を過ぎても自動で「送付完了」にはせず、経過日数を表示し続ける */
+function sendInfo(c, now) {
+  const s = c.send;
+  const a = sendAnchor(s);
+  const label = sendLabel(s);
+  if (!a) return { label, text: '', tone: 'normal' };
+  const diff = calDays(a, now);
+  let text, tone;
+  if (diff > 0) {
+    text = s.type === 'date' ? `送付予定日まであと${diff}日` : `送付時期まであと${diff}日`;
+    tone = diff <= (s.type === 'year' ? 7 : 3) ? 'near' : 'normal';
+  } else if (diff === 0) {
+    text = s.type === 'date' ? '本日が送付予定日です' : s.type === 'year' ? '本日が年内の最終日です' : '本日から送付時期です';
+    tone = 'today';
+  } else {
+    text = s.type === 'date' ? `送付予定日から${-diff}日経過` : `送付時期から${-diff}日経過`;
+    tone = 'over';
+  }
+  return { label, text, tone };
+}
+
+/* ============================================================
+   保存・読込(符号化)
+   ============================================================ */
+const STORAGE_KEY = 'campaign00_data';
+let campaigns = [];
+let idSeq = 1;
+const newId = () => idSeq++;
+
+function toB64(s) {
+  const bytes = new TextEncoder().encode(s);
+  let bin = '';
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin);
+}
+function fromB64(b) {
+  const bin = atob(b);
+  return new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0)));
+}
+/* 対象: 全員選択のグループは「S*」「H*」に圧縮。「その他」は S0 / H0 */
+function encodeTargets(codes) {
+  const set = new Set(codes);
+  const parts = [];
+  ['S', 'H'].forEach(p => {
+    if (POOL_CODES[p].every(cd => set.has(cd))) parts.push(p + '*');
+    else POOL_CODES[p].forEach(cd => { if (set.has(cd)) parts.push(cd); });
+    if (set.has(OTHER_CODE[p])) parts.push(OTHER_CODE[p]);
+  });
+  return parts.join(',');
+}
+function decodeTargets(str) {
+  const out = [];
+  String(str || '').split(',').forEach(t => {
+    t = t.trim();
+    if (t === 'S*' || t === 'H*') POOL_CODES[t[0]].forEach(cd => out.push(cd));
+    else if (CHAR_BY_CODE[t]) out.push(t);
+  });
+  return [...new Set(out)];
+}
+function sendValueStr(s) {
+  switch (s.type) {
+    case 'date': return `${s.y}${pad2(s.m)}${pad2(s.d)}`;
+    case 'early': case 'mid': case 'late': return `${s.y}${pad2(s.m)}`;
+    case 'year': return String(s.y);
+    default: return '';
+  }
+}
+function parseSendValue(type, v) {
+  let m;
+  if (type === 'none') return { type };
+  if (type === 'date') {
+    m = /^(\d{4})(\d{2})(\d{2})$/.exec(v);
+    if (!m) return null;
+    const y = +m[1], mo = +m[2], d = +m[3];
+    if (mo < 1 || mo > 12 || d < 1 || d > daysInMonth(y, mo)) return null;
+    return { type, y, m: mo, d };
+  }
+  if (type === 'year') {
+    m = /^(\d{4})$/.exec(v);
+    return m ? { type, y: +m[1] } : null;
+  }
+  m = /^(\d{4})(\d{2})$/.exec(v);
+  if (!m || +m[2] < 1 || +m[2] > 12) return null;
+  return { type, y: +m[1], m: +m[2] };
+}
+function encodeCampaigns(list) {
+  const arr = list.map(c => [
+    c.title,
+    c.dl ? `${c.dl.y}${pad2(c.dl.m)}${pad2(c.dl.d)}` : '',
+    c.dl ? c.dl.t : '',
+    c.items.reduce((mask, i) => mask | (1 << i), 0),
+    encodeTargets(c.targets),
+    SEND_KEYS.indexOf(c.send.type),
+    sendValueStr(c.send),
+    STATUS_CODE.indexOf(c.status),
+  ]);
+  return 'C1:' + toB64(JSON.stringify(arr));
+}
+function decodeCampaigns(str) {
+  const s = String(str || '').trim();
+  if (!s.startsWith('C1:')) return null;
+  let arr;
+  try { arr = JSON.parse(fromB64(s.slice(3).replace(/\s+/g, ''))); } catch (e) { return null; }
+  if (!Array.isArray(arr)) return null;
+  const out = [];
+  arr.forEach(r => {
+    if (!Array.isArray(r) || r.length < 8) return;
+    const [title, dlStr, t, mask, tgt, sendIdx, sendVal, stIdx] = r;
+    const type = SEND_KEYS[sendIdx];
+    let status = STATUS_CODE[stIdx];
+    if (status === 'scheduled') status = 'applied';
+    if (!title || !type || !status) return;
+    let dl = null;
+    if (String(dlStr) !== '') {
+      const m = /^(\d{4})(\d{2})(\d{2})$/.exec(String(dlStr));
+      const tp = parseTime(t);
+      if (!m || !tp) return;
+      const y = +m[1], mo = +m[2], d = +m[3];
+      if (mo < 1 || mo > 12 || d < 1 || d > daysInMonth(y, mo)) return;
+      dl = { y, m: mo, d, t: tp.text };
+    }
+    const send = parseSendValue(type, String(sendVal));
+    if (!send) return;
+    out.push({
+      id: newId(),
+      title: String(title),
+      dl,
+      items: [0, 1, 2, 3].filter(i => (Number(mask) >> i) & 1),
+      targets: decodeTargets(tgt),
+      send,
+      status,
+    });
+  });
+  return out;
+}
+function persist() {
+  localStorage.setItem(STORAGE_KEY, encodeCampaigns(campaigns));
+}
+function loadCampaigns() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  campaigns = (saved && decodeCampaigns(saved)) || [];
+}
+
+/* ============================================================
+   トースト
+   ============================================================ */
+let toastTimer = null;
+function showToast(msg) {
+  const e = document.getElementById('toast');
+  e.textContent = msg;
+  e.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => e.classList.remove('show'), 1600);
+}
+
+/* ============================================================
+   日付選択(応募受付期間: 年・月・日のプルダウン)
+   ============================================================ */
+function createDateField(root) {
+  root.classList.add('date-row');
+  root.innerHTML = '<select class="sel-y"></select><span class="sep">年</span>'
+    + '<select class="sel-m"></select><span class="sep">月</span>'
+    + '<select class="sel-d"></select><span class="sep">日</span>';
+  const ys = root.querySelector('.sel-y'), ms = root.querySelector('.sel-m'), ds = root.querySelector('.sel-d');
+  const blank = '<option value="">-</option>';
+
+  function fillYears(extraYear) {
+    const cur = nowJst().y;
+    const years = new Set();
+    for (let y = cur - 1; y <= cur + 2; y++) years.add(y);
+    if (extraYear) years.add(extraYear);
+    const keep = ys.value;
+    ys.innerHTML = blank + [...years].sort((a, b) => a - b).map(y => `<option value="${y}">${y}</option>`).join('');
+    ys.value = keep;
+  }
+  function fillMonths() {
+    let h = blank;
+    for (let m = 1; m <= 12; m++) h += `<option value="${m}">${m}</option>`;
+    ms.innerHTML = h;
+  }
+  function fillDays() {
+    const y = Number(ys.value) || 2001, m = Number(ms.value);
+    const max = m ? daysInMonth(y, m) : 31;
+    const keep = ds.value;
+    let h = blank;
+    for (let d = 1; d <= max; d++) h += `<option value="${d}">${d}</option>`;
+    ds.innerHTML = h;
+    ds.value = Number(keep) <= max ? keep : '';
+  }
+  fillYears(); fillMonths(); fillDays();
+  ys.value = String(nowJst().y);
+  ys.addEventListener('change', fillDays);
+  ms.addEventListener('change', fillDays);
+
+  return {
+    get() { return { y: Number(ys.value) || 0, m: Number(ms.value) || 0, d: Number(ds.value) || 0 }; },
+    set(y, m, d) {
+      fillYears(y);
+      ys.value = y ? String(y) : '';
+      ms.value = m ? String(m) : '';
+      fillDays();
+      ds.value = d ? String(d) : '';
+    },
+    clear() {
+      fillYears();
+      ys.value = String(nowJst().y);
+      ms.value = '';
+      fillDays();
+      ds.value = '';
+    },
+  };
+}
+
+/* ============================================================
+   送付時期の選択(カレンダー + 上旬/中旬/下旬以降 + 今年中)
+   ============================================================ */
+const el = id => document.getElementById(id);
+const sendPicker = (() => {
+  let state = { type: 'none' };
+  let calY = 0, calM = 0, yearSel = 0;
+  const root = el('send-picker');
+
+  const yearBtnLabel = y => (y === nowJst().y ? `今年中(${y}年)` : `${y}年中`);
+
+  function render() {
+    const now = nowJst();
+    el('cal-title').textContent = `${calY}年${calM}月`;
+
+    /* カレンダー */
+    const first = new Date(Date.UTC(calY, calM - 1, 1)).getUTCDay();
+    const days = daysInMonth(calY, calM);
+    let h = ['日', '月', '火', '水', '木', '金', '土'].map((l, i) => `<div class="cal-dow${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${l}</div>`).join('');
+    for (let i = 0; i < first; i++) h += '<div class="cal-blank"></div>';
+    for (let d = 1; d <= days; d++) {
+      const on = state.type === 'date' && state.y === calY && state.m === calM && state.d === d;
+      const today = now.y === calY && now.m === calM && now.d === d;
+      h += `<button type="button" class="cal-day${on ? ' on' : ''}${today ? ' today' : ''}" data-day="${d}">${d}</button>`;
+    }
+    el('cal-grid').innerHTML = h;
+
+    /* 期間ボタン */
+    root.querySelectorAll('[data-period]').forEach(b => {
+      b.classList.toggle('on', state.type === b.dataset.period && state.y === calY && state.m === calM);
+    });
+
+    /* 今年中ボタンと対象年 */
+    const years = new Set();
+    for (let y = now.y; y <= now.y + 2; y++) years.add(y);
+    years.add(yearSel);
+    const sel = el('year-select');
+    sel.innerHTML = [...years].sort((a, b) => a - b).map(y => `<option value="${y}">${y}年</option>`).join('');
+    sel.value = String(yearSel);
+    const yb = el('year-btn');
+    yb.textContent = yearBtnLabel(yearSel);
+    yb.classList.toggle('on', state.type === 'year' && state.y === yearSel);
+
+    /* 選択内容 */
+    el('send-summary').textContent = state.type === 'none' ? '選択中:未選択' : `選択中:${sendLabel(state)}`;
+    el('send-clear').style.display = state.type === 'none' ? 'none' : '';
+  }
+
+  root.addEventListener('click', e => {
+    const day = e.target.closest('[data-day]');
+    if (day) {
+      const d = Number(day.dataset.day);
+      state = (state.type === 'date' && state.y === calY && state.m === calM && state.d === d)
+        ? { type: 'none' } : { type: 'date', y: calY, m: calM, d };
+      render(); return;
+    }
+    const period = e.target.closest('[data-period]');
+    if (period) {
+      const t = period.dataset.period;
+      state = (state.type === t && state.y === calY && state.m === calM)
+        ? { type: 'none' } : { type: t, y: calY, m: calM };
+      render(); return;
+    }
+    if (e.target.closest('#year-btn')) {
+      state = (state.type === 'year' && state.y === yearSel) ? { type: 'none' } : { type: 'year', y: yearSel };
+      render(); return;
+    }
+    if (e.target.closest('#cal-prev')) { calM--; if (calM < 1) { calM = 12; calY--; } render(); return; }
+    if (e.target.closest('#cal-next')) { calM++; if (calM > 12) { calM = 1; calY++; } render(); return; }
+    if (e.target.closest('#send-clear')) { state = { type: 'none' }; render(); }
+  });
+  el('year-select').addEventListener('change', e => {
+    yearSel = Number(e.target.value);
+    if (state.type === 'year') state = { type: 'year', y: yearSel };
+    render();
+  });
+
+  return {
+    reset() { const n = nowJst(); state = { type: 'none' }; calY = n.y; calM = n.m; yearSel = n.y; render(); },
+    load(send) {
+      const n = nowJst();
+      state = { ...send };
+      calY = send.y && send.type !== 'year' && send.type !== 'none' ? send.y : n.y;
+      calM = send.m && send.type !== 'year' && send.type !== 'none' ? send.m : n.m;
+      yearSel = send.type === 'year' ? send.y : n.y;
+      render();
+    },
+    get() { return { ...state }; },
+  };
+})();
+
+/* ============================================================
+   登録フォーム
+   ============================================================ */
+const dlField = createDateField(el('f-dl-date'));
+let formItems = new Set();
+let formTargets = new Set();
+let editingId = null;
+
+el('f-status').innerHTML = STATUSES.map(s => `<option value="${s.key}">${s.label}</option>`).join('');
+
+function renderItemChips() {
+  el('item-chips').innerHTML = ITEMS.map((name, i) =>
+    `<button type="button" class="toggle-chip${formItems.has(i) ? ' on' : ''}" data-item="${i}">${name}</button>`).join('');
+}
+el('item-chips').addEventListener('click', e => {
+  const b = e.target.closest('[data-item]');
+  if (!b) return;
+  const i = Number(b.dataset.item);
+  if (formItems.has(i)) formItems.delete(i); else formItems.add(i);
+  renderItemChips();
+});
+
+function renderTargetChips() {
+  ['S', 'H'].forEach(p => {
+    const codes = POOL_CODES[p].concat(OTHER_CODE[p]);
+    el('chips-' + p).innerHTML = codes.map(cd => {
+      const c = CHAR_BY_CODE[cd];
+      const on = formTargets.has(cd);
+      const style = on
+        ? `background:${c.color};color:${c.text};border-left-color:${c.color};`
+        : `border-left-color:${c.color};`;
+      return `<button type="button" class="target-chip${on ? ' on' : ''}" data-code="${cd}" style="${style}">${esc(c.name)}</button>`;
+    }).join('');
+    const n = POOL_CODES[p].filter(cd => formTargets.has(cd)).length;
+    el('count-' + p).textContent = `${n} / ${POOL_CODES[p].length}名` + (formTargets.has(OTHER_CODE[p]) ? ' + その他' : '');
+  });
+}
+el('form-card').addEventListener('click', e => {
+  const chip = e.target.closest('[data-code]');
+  if (chip) {
+    const cd = chip.dataset.code;
+    if (formTargets.has(cd)) formTargets.delete(cd); else formTargets.add(cd);
+    renderTargetChips();
+    return;
+  }
+  const act = e.target.closest('[data-pool-act]');
+  if (act) {
+    const p = act.dataset.pool;
+    if (act.dataset.poolAct === 'all') POOL_CODES[p].forEach(cd => formTargets.add(cd));
+    else POOL_CODES[p].concat(OTHER_CODE[p]).forEach(cd => formTargets.delete(cd));
+    renderTargetChips();
+  }
+});
+
+function resetForm() {
+  editingId = null;
+  el('f-title').value = '';
+  dlField.clear();
+  el('f-dl-time').value = '26:59';
+  formItems = new Set();
+  formTargets = new Set();
+  sendPicker.reset();
+  el('f-status').value = 'before';
+  el('f-msg').textContent = '';
+  el('form-title').textContent = 'キャンペーンを登録';
+  el('f-submit').textContent = '登録する';
+  renderItemChips();
+  renderTargetChips();
+}
+function openForm(c) {
+  resetForm();
+  if (c) {
+    editingId = c.id;
+    el('f-title').value = c.title;
+    if (c.dl) { dlField.set(c.dl.y, c.dl.m, c.dl.d); el('f-dl-time').value = c.dl.t; }
+    else { dlField.clear(); el('f-dl-time').value = '26:59'; }
+    formItems = new Set(c.items);
+    formTargets = new Set(c.targets);
+    sendPicker.load(c.send);
+    el('f-status').value = c.status;
+    el('form-title').textContent = 'キャンペーンを編集';
+    el('f-submit').textContent = '更新する';
+    renderItemChips();
+    renderTargetChips();
+  }
+  el('form-card').style.display = '';
+  el('add-toggle').textContent = '× 閉じる';
+  el('add-toggle').classList.add('open');
+  el('form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function closeForm() {
+  el('form-card').style.display = 'none';
+  el('add-toggle').textContent = '＋ キャンペーンを登録';
+  el('add-toggle').classList.remove('open');
+  editingId = null;
+}
+el('add-toggle').addEventListener('click', () => {
+  if (el('form-card').style.display === 'none') openForm(null); else closeForm();
+});
+el('f-cancel').addEventListener('click', closeForm);
+
+function readForm() {
+  const fail = msg => ({ ok: false, msg });
+  const title = el('f-title').value.trim();
+  if (!title) return fail('キャンペーンタイトルを入力してください。');
+
+  /* 応募受付期間: 月・日が両方空なら「期間なし」で登録できる */
+  const d = dlField.get();
+  let dl = null;
+  if (d.m || d.d) {
+    if (!d.y || !d.m || !d.d) return fail('応募受付期間は、年月日をすべて選択するか、月と日を空欄にしてください。');
+    const raw = el('f-dl-time').value.trim();
+    const tp = raw === '' ? parseTime('26:59') : parseTime(raw);
+    if (!tp) return fail('時刻は「26:59」のように入力してください(0:00〜47:59)。');
+    dl = { y: d.y, m: d.m, d: d.d, t: tp.text };
+  }
+
+  const items = [...formItems].sort((a, b) => a - b);
+  if (items.length === 0) return fail('アイテムの種類を1つ以上選択してください。');
+  const targets = [];
+  ['S', 'H'].forEach(p => POOL_CODES[p].concat(OTHER_CODE[p]).forEach(cd => { if (formTargets.has(cd)) targets.push(cd); }));
+  if (targets.length === 0) return fail('対象のステディ・カレを1人以上選択してください。');
+
+  const s = sendPicker.get();
+  let send = { type: 'none' };
+  if (s.type === 'date') send = { type: 'date', y: s.y, m: s.m, d: s.d };
+  else if (s.type === 'early' || s.type === 'mid' || s.type === 'late') send = { type: s.type, y: s.y, m: s.m };
+  else if (s.type === 'year') send = { type: 'year', y: s.y };
+
+  return { ok: true, data: { title, dl, items, targets, send, status: el('f-status').value } };
+}
+el('f-submit').addEventListener('click', () => {
+  const r = readForm();
+  if (!r.ok) { el('f-msg').textContent = r.msg; return; }
+  if (editingId !== null) {
+    const i = campaigns.findIndex(c => c.id === editingId);
+    if (i >= 0) campaigns[i] = { id: editingId, ...r.data };
+    showToast('更新しました');
+  } else {
+    campaigns.push({ id: newId(), ...r.data });
+    showToast('登録しました');
+  }
+  persist();
+  el('f-msg').textContent = '';
+  closeForm();
+  renderAll();
+});
+
+/* ============================================================
+   並び替え
+   ============================================================ */
+let sortMode = 'status';   /* 'status' | 'send' | 'reg' */
+let sortAsc = true;
+
+function cmpNullsLast(a, b, asc) {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return asc ? a - b : b - a;
+}
+function sendKey(c) {
+  const a = sendAnchor(c.send);
+  return a ? Date.UTC(a.y, a.m - 1, a.d) : null;
+}
+function dlKey(c) { return c.dl ? deadlineMs(c.dl) : null; }
+/* ステータス順: 応募前→応募済み→送付予定日→遅延中(同じ状況の中では送付時期順、続いて応募期限順)
+   送付時期順: 送付時期の日付順(未設定は常に最後)
+   登録順: 登録した順
+   いずれも asc=false で逆順(△昇順 / ▽降順) */
+function sortCampaigns(list, mode, asc) {
+  const si = c => STATUS_KEYS.indexOf(c.status);
+  const dir = asc ? 1 : -1;
+  return [...list].sort((x, y) => {
+    if (mode === 'reg') return dir * (x.id - y.id);
+    if (mode === 'send') return cmpNullsLast(sendKey(x), sendKey(y), asc) || (si(x) - si(y)) || (x.id - y.id);
+    return dir * (si(x) - si(y))
+      || cmpNullsLast(sendKey(x), sendKey(y), asc)
+      || cmpNullsLast(dlKey(x), dlKey(y), asc)
+      || dir * (x.id - y.id);
+  });
+}
+el('sort-mode').addEventListener('change', e => { sortMode = e.target.value; renderLists(); });
+el('sort-dir').addEventListener('click', () => {
+  sortAsc = !sortAsc;
+  renderSortDir();
+  renderLists();
+});
+function renderSortDir() {
+  const b = el('sort-dir');
+  b.textContent = sortAsc ? '昇順' : '降順';
+  b.title = sortAsc ? '昇順(押すと降順)' : '降順(押すと昇順)';
+  b.setAttribute('aria-label', sortAsc ? '昇順' : '降順');
+}
+
+/* ============================================================
+   一覧の表示
+   ============================================================ */
+function targetTags(codes, muted) {
+  const set = new Set(codes);
+  const tag = (label, color, text) => muted
+    ? `<span class="tag">${esc(label)}</span>`
+    : `<span class="tag char" style="background:${color};color:${text};">${esc(label)}</span>`;
+  const tags = [];
+  ['S', 'H'].forEach(p => {
+    if (POOL_CODES[p].every(cd => set.has(cd))) tags.push(tag(POOL_INFO[p].label + '全員', POOL_INFO[p].color, '#fff'));
+    else POOL_CODES[p].forEach(cd => { if (set.has(cd)) { const c = CHAR_BY_CODE[cd]; tags.push(tag(c.name, c.color, c.text)); } });
+    if (set.has(OTHER_CODE[p])) tags.push(tag('その他', POOL_INFO[p].color, '#fff'));
+  });
+  return tags.join('') || '<span class="tag">(なし)</span>';
+}
+/* タイトルの末尾に「アイテム」→「対象」の順で続ける */
+function titleHtml(c, muted) {
+  const items = c.items.map(i => `<span class="tag">${ITEMS[i]}</span>`).join('');
+  return `<div class="camp-title">${esc(c.title)}<span class="title-tags">${items}${targetTags(c.targets, muted)}</span></div>`;
+}
+function sideHtml(c) {
+  const st = STATUS_BY_KEY[c.status];
+  return `<div class="camp-side">
+    <span class="status-badge"${c.status === 'done' ? '' : ` style="background:${st.color};"`}>${st.label}</span>
+    <button type="button" class="icon-btn" data-act="edit" data-id="${c.id}">編集</button>
+    <button type="button" class="icon-btn del" data-act="del" data-id="${c.id}">削除</button>
+  </div>`;
+}
+function activeCard(c, now) {
+  const app = appInfo(c, now);
+  const snd = sendInfo(c, now);
+  let banner = '', appRow = '';
+  if (app.state !== 'none') {
+    let body;
+    if (c.status === 'before') {
+      if (app.state === 'last') banner = `<div class="last-banner">${app.text}<small>${esc(app.dlText)}</small></div>`;
+      body = app.state === 'last' ? esc(app.dlText) : `${esc(app.dlText)}<span class="pill ${app.tone}">${app.text}</span>`;
+    } else {
+      body = esc(app.dlText);
+    }
+    appRow = `<div class="row"><span class="row-label">応募受付</span><span class="row-body${c.status === 'before' ? '' : ' dim'}">${body}</span></div>`;
+  }
+  const sendBody = snd.text ? `${esc(snd.label)}<span class="pill ${snd.tone}">${snd.text}</span>` : esc(snd.label);
+  return `<div class="camp-card">
+    <div class="camp-main">
+      ${titleHtml(c, false)}
+      ${banner}
+      ${appRow}
+      <div class="row"><span class="row-label">送付時期</span><span class="row-body">${sendBody}</span></div>
+    </div>
+    ${sideHtml(c)}
+  </div>`;
+}
+function doneCard(c) {
+  return `<div class="done-card">
+    <div class="camp-main">
+      ${titleHtml(c, true)}
+      <div class="row"><span class="row-label">送付時期</span><span class="row-body">${esc(sendLabel(c.send))}</span></div>
+    </div>
+    ${sideHtml(c)}
+  </div>`;
+}
+
+function renderLists() {
+  const now = nowJst();
+  const active = sortCampaigns(campaigns.filter(c => c.status !== 'done'), sortMode, sortAsc);
+  const done = sortCampaigns(campaigns.filter(c => c.status === 'done'), sortMode, sortAsc);
+  el('sort-bar').style.display = campaigns.length ? '' : 'none';
+  el('active-list').innerHTML = active.length
+    ? active.map(c => activeCard(c, now)).join('')
+    : '<div class="empty-message">表示するキャンペーンがありません。<br>「＋ キャンペーンを登録」から登録してください。</div>';
+  el('done-section').style.display = done.length ? '' : 'none';
+  el('done-summary').textContent = `送付完了 (${done.length}件)`;
+  el('done-list').innerHTML = done.map(doneCard).join('');
+}
+/* 日本時間以外の端末で閲覧しているときだけ、日本時間の案内を表示する */
+function renderClock() {
+  const note = el('jst-note');
+  if (isJstDevice()) { note.style.display = 'none'; return; }
+  const n = nowJst();
+  note.style.display = '';
+  note.textContent = `日付・時刻はすべて日本時間(JST)で計算します。現在:${n.y}年${n.m}月${n.d}日 ${pad2(n.h)}:${pad2(n.mi)}`;
+}
+function refreshExport() {
+  el('export-text').value = campaigns.length ? encodeCampaigns(campaigns) : '';
+}
+function renderAll() {
+  renderClock();
+  renderLists();
+  refreshExport();
+}
+
+/* 一覧内の操作(編集・削除) */
+function onListClick(e) {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const id = Number(b.dataset.id);
+  const c = campaigns.find(x => x.id === id);
+  if (!c) return;
+  if (b.dataset.act === 'edit') { openForm(c); return; }
+  if (b.dataset.act === 'del') {
+    if (!confirm(`「${c.title}」を削除します。よろしいですか？`)) return;
+    campaigns = campaigns.filter(x => x.id !== id);
+    if (editingId === id) closeForm();
+    persist();
+    renderAll();
+    showToast('削除しました');
+  }
+}
+['active-list', 'done-list'].forEach(id => el(id).addEventListener('click', onListClick));
+
+/* ============================================================
+   保存・読込・リセット
+   ============================================================ */
+el('copy-btn').addEventListener('click', () => {
+  const text = el('export-text').value;
+  if (!text) { showToast('登録されたキャンペーンがありません'); return; }
+  navigator.clipboard.writeText(text).then(() => showToast('コピーしました')).catch(() => showToast('コピーできませんでした'));
+});
+el('paste-btn').addEventListener('click', () => {
+  navigator.clipboard.readText().then(t => { el('import-text').value = t; })
+    .catch(() => showToast('クリップボードを読み取れませんでした'));
+});
+el('import-btn').addEventListener('click', () => {
+  const raw = el('import-text').value;
+  if (!raw.trim()) { showToast('コードを入力してください'); return; }
+  const decoded = decodeCampaigns(raw);
+  if (!decoded) { showToast('コードを読み取れませんでした'); return; }
+  if (campaigns.length > 0 && !confirm('現在の登録内容を、読み込んだコードの内容で置き換えます。よろしいですか？')) return;
+  campaigns = decoded;
+  persist();
+  closeForm();
+  renderAll();
+  showToast(`${decoded.length}件読み込みました`);
+});
+el('reset-btn').addEventListener('click', () => {
+  if (!confirm('登録されているキャンペーンをすべて削除します。よろしいですか？この操作は元に戻せません。')) return;
+  campaigns = [];
+  persist();
+  closeForm();
+  renderAll();
+  showToast('リセットしました');
+});
+
+/* ============================================================
+   起動
+   ============================================================ */
+loadCampaigns();
+resetForm();
+renderSortDir();
+renderAll();
+setInterval(() => { renderClock(); renderLists(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderClock(); renderLists(); } });
+</script>
+</body>
+</html>
