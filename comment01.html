@@ -37,6 +37,7 @@
   .note + .note { margin-top: 6px; }
 
   .bm-wrap { text-align: center; margin: 4px 0 10px; }
+  .bm-sep { margin-top: 18px; padding-top: 14px; border-top: 1px solid #f0f0f0; }
   .bm-link {
     display: inline-block;
     padding: 12px 22px;
@@ -83,6 +84,11 @@
 
   .char-form { display: flex; flex-direction: column; gap: 8px; }
   .char-list { margin-top: 12px; }
+  .back-box { margin-top: 16px; padding-top: 14px; border-top: 1px solid #f0f0f0; }
+  .back-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .back-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .back-label { flex-shrink: 0; width: 9.5em; font-size: 12.5px; color: #555; }
+  .back-row select { flex: 1; min-width: 0; }
   .char-item {
     display: flex;
     align-items: center;
@@ -126,7 +132,7 @@
 
   <div class="card">
     <div class="bm-wrap">
-      <a class="bm-link" id="bm-link" href="#" draggable="true">📋 ホームコメントをコピー</a>
+      <a class="bm-link" id="bm-link" href="#" draggable="true">📋 ホームコメントをコピー(メニュー)</a>
     </div>
     <div class="note">↑ ブックマークバーにドラッグして登録してください。ログインしてゲーム内の任意のページを開いた状態でこのブックマークを選択すると、ホームコメントがコピーされます。</div>
     <div class="note">または、適当なブックマークを作成後編集し、URL欄に下のコードを貼り付けて保存すると同様に実行できます。</div>
@@ -136,11 +142,32 @@
       <textarea id="bm-code" rows="3" readonly></textarea>
       <button class="btn" id="bm-copy-btn">コピー</button>
     </div>
+
+    <div class="bm-sep">
+      <div class="label" style="margin-top:0;">メニューを出さずに、選択するだけで実行するバージョン</div>
+
+      <div class="bm-wrap">
+        <a class="bm-link" id="bm-link-current" href="#" draggable="true">📋 現在のホームコメントをコピー</a>
+      </div>
+      <div class="row">
+        <textarea id="bm-code-current" rows="2" readonly></textarea>
+        <button class="btn" id="bm-copy-current">コピー</button>
+      </div>
+
+      <div class="bm-wrap" style="margin-top:14px;">
+        <a class="bm-link" id="bm-link-all" href="#" draggable="true">📋 全員分をまとめてコピー</a>
+      </div>
+      <div class="row">
+        <textarea id="bm-code-all" rows="2" readonly></textarea>
+        <button class="btn" id="bm-copy-all">コピー</button>
+      </div>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-title">ステディ・カレ切り替え(任意)</div>
     <div class="note">設定を変えたら、ブックマークを登録し直してください。</div>
+    <div class="note">メニューと「全員分をまとめてコピー」には、いま開いているサイト(星色ステディ/ハートビート音楽院)のステディ・カレだけが対象になります。</div>
 
     <div class="char-form" style="margin-top:12px;">
       <select id="char-select"></select>
@@ -148,6 +175,13 @@
       <div class="status" id="char-status"></div>
     </div>
     <div class="char-list" id="char-list"></div>
+
+    <div class="back-box">
+      <div class="back-title">コピー後に表示を戻すステディ・カレ</div>
+      <div class="note">「全員分をまとめてコピー」の最後に、指定したステディ・カレへ自動で切り替えます(画面の表示は、ページを更新すると反映されます)。</div>
+      <div class="back-row"><span class="back-label">星色ステディ</span><select id="back-S"></select></div>
+      <div class="back-row"><span class="back-label">ハートビート音楽院</span><select id="back-H"></select></div>
+    </div>
   </div>
 </div>
 
@@ -177,7 +211,16 @@ function extractComment(doc) {
 
 function bookmarkletMain(CFG) {
   var HOME = '/usr/index.php';
-  var chars = (CFG && CFG.ch) || [];
+  var all = (CFG && CFG.ch) || [];
+  function bareHost(h) { return String(h).replace(/^www\./, ''); }
+  var chars = all.filter(function (c) {
+    try { return bareHost(new URL(c.u).hostname) === bareHost(location.hostname); } catch (e) { return false; }
+  });
+  var backs = (CFG && CFG.back) || [];
+  var back = null;
+  backs.forEach(function (b) {
+    try { if (bareHost(new URL(b.u).hostname) === bareHost(location.hostname)) { back = b; } } catch (e) { }
+  });
   var Z = 2147483647;
 
   function mk(tag, css, text) {
@@ -220,7 +263,7 @@ function bookmarkletMain(CFG) {
     return ok;
   }
 
-  function showFallback(text, summary) {
+  function showFallback(text, summary, extra) {
     var old = document.getElementById('__cmt_fb');
     if (old) { old.remove(); }
     var w = mk('div', 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:88%;max-width:420px;background:#fff;color:#1a1a1a;border-radius:12px;padding:14px;box-shadow:0 6px 24px rgba(0,0,0,.35);font:13px/1.5 sans-serif;z-index:' + Z + ';');
@@ -228,6 +271,7 @@ function bookmarkletMain(CFG) {
     var ta = mk('textarea', 'width:100%;height:140px;box-sizing:border-box;font:16px/1.5 sans-serif;padding:8px;border:1px solid #ccc;border-radius:8px;');
     ta.value = text;
     var msg = mk('div', 'margin-bottom:8px;font-weight:700;', '取得しました' + (summary ? '(' + summary + ')' : '') + '。「コピー」を押してコピーしてください。');
+    var extraEl = mk('div', 'margin-bottom:8px;color:#555;font-size:12px;', extra || '');
     var note = mk('div', 'margin-top:8px;color:#c0392b;font-size:12px;', '');
     var row = mk('div', 'display:flex;gap:8px;margin-top:8px;');
     var b1 = mk('button', 'flex:1;padding:13px;border:2px solid #5BBAF8;border-radius:10px;background:#5BBAF8;color:#fff;font:700 15px sans-serif;', 'コピー');
@@ -236,7 +280,7 @@ function bookmarkletMain(CFG) {
       var ok = await copy(text);
       if (ok) {
         w.remove();
-        toast('コピーしました\n' + (summary || preview(text)));
+        toast('コピーしました\n' + (summary || preview(text)) + (extra ? '\n' + extra : ''));
       } else {
         note.textContent = 'コピーできませんでした。下の文章を選択してコピーしてください。';
         ta.focus();
@@ -248,6 +292,7 @@ function bookmarkletMain(CFG) {
     row.appendChild(b1);
     row.appendChild(b2);
     w.appendChild(msg);
+    if (extra) { w.appendChild(extraEl); }
     w.appendChild(ta);
     w.appendChild(row);
     w.appendChild(note);
@@ -296,13 +341,26 @@ function bookmarkletMain(CFG) {
     return null;
   }
 
-  async function deliver(textPromise, summaryFn) {
+  async function restoreAfter(lastUrl) {
+    if (!back) { return null; }
+    if (back.u !== lastUrl) {
+      var r = await fetch(back.u, { credentials: 'include', cache: 'no-store' });
+      if (!r.ok) { throw new Error('「' + back.n + '」への表示の切り替えに失敗しました(HTTP ' + r.status + ')'); }
+    }
+    return back.n + ' に表示を戻しました';
+  }
+
+  async function deliver(textPromise, summaryFn, afterFn) {
     var pending = copyLater(textPromise);
     var text = await textPromise;
     var ok = pending ? await pending : false;
     if (!ok) { ok = await copy(text); }
+    var extra = '';
+    if (afterFn) {
+      try { extra = (await afterFn()) || ''; } catch (e) { extra = String((e && e.message) || e); }
+    }
     var summary = summaryFn ? summaryFn(text) : '';
-    if (ok) { toast('コピーしました\n' + (summary || preview(text))); } else { showFallback(text, summary); }
+    if (ok) { toast('コピーしました\n' + (summary || preview(text)) + (extra ? '\n' + extra : '')); } else { showFallback(text, summary, extra); }
   }
 
   async function run(switchUrl) {
@@ -315,10 +373,12 @@ function bookmarkletMain(CFG) {
 
   async function runAll() {
     var cur = '';
+    var lastUrl = '';
     var work = (async function () {
       var out = [];
       for (var i = 0; i < chars.length; i++) {
         cur = chars[i].n;
+        lastUrl = chars[i].u;
         toast((i + 1) + '/' + chars.length + ' ' + cur + ' を取得中…');
         var t = await getComment(chars[i].u);
         out.push('【' + cur + '】\n' + t);
@@ -327,9 +387,10 @@ function bookmarkletMain(CFG) {
       return dateHeader() + '\n' + out.join('\n\n') + '\n\n';
     })();
     try {
-      await deliver(work, function () { return chars.length + '名分'; });
+      await deliver(work, function () { return chars.length + '名分'; }, function () { return restoreAfter(chars[chars.length - 1].u); });
     } catch (e) {
       toast((cur ? cur + ':' : '') + String((e && e.message) || e), true);
+      if (lastUrl) { try { await restoreAfter(lastUrl); } catch (e2) { } }
     }
   }
 
@@ -356,18 +417,30 @@ function bookmarkletMain(CFG) {
     document.body.appendChild(box);
   }
 
-  if (chars.length === 0) { run(null); } else { showMenu(); }
+  var action = (CFG && CFG.action) || 'menu';
+  if (action === 'current') {
+    run(null);
+  } else if (action === 'all') {
+    if (chars.length === 0) { toast('このサイトのステディ・カレが登録されていません。', true); } else { runAll(); }
+  } else if (chars.length === 0) {
+    run(null);
+  } else {
+    showMenu();
+  }
 }
 
 /* ============================================================
    このページ側の処理
    ============================================================ */
 const CHARS_KEY = 'comment00_chars';
-const SWITCH_BASE = 'https://hoshikare.jp/usr/steady/detailSteady.php';
+const BACK_KEY = 'comment00_back';
+const SITES = {
+  S: { label: '星色ステディ', base: 'https://hoshikare.jp/usr/steady/detailSteady.php' },
+  H: { label: 'ハートビート音楽院', base: 'https://heartbeat-academy.com/usr/steady/detailSteady.php' },
+};
 
-/* 星色ステディのステディ一覧(名前・ID・イメージカラー)。
-   ※ハートビート音楽院の切り替えは未確認のため未対応 */
-const CHARACTERS = [
+/* 星色ステディのステディ一覧(名前・ID・イメージカラー) */
+const STEADY_LIST = [
   { name: '氷室蓮',     id: '101', color: '#7597E1' },
   { name: '白鳥恭治',   id: '102', color: '#DD91EB' },
   { name: '早乙女天哉', id: '103', color: '#F7B956' },
@@ -403,29 +476,42 @@ function getTextColor(hex) {
   const b = parseInt(hex.slice(5, 7), 16);
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? '#1a1a1a' : '#ffffff';
 }
-const CHAR_BY_ID = {};
+/* ハートビート音楽院のカレ一覧(IDは星色ステディとは別の番号体系のため、登録は「作品+ID」で区別する) */
+const KARE_LIST = [
+  { name: '獅堂ケイ',   id: '101', color: '#BF014E' },
+  { name: '漣大和',     id: '102', color: '#4289BD' },
+  { name: '綿谷めぐる', id: '103', color: '#F5F4F9' },
+  { name: '久世幸斗',   id: '104', color: '#228B22' },
+  { name: '柴ムサシ',   id: '105', color: '#FFE200' },
+];
+const CHARACTERS = []
+  .concat(STEADY_LIST.map(c => ({ pool: 'S', ...c })))
+  .concat(KARE_LIST.map(c => ({ pool: 'H', ...c })));
+const CHAR_BY_KEY = {};
 CHARACTERS.forEach(c => {
+  c.key = c.pool + c.id;
   c.text = getTextColor(c.color);
-  c.url = `${SWITCH_BASE}?sid=${c.id}&myst=1`;
-  CHAR_BY_ID[c.id] = c;
+  c.url = `${SITES[c.pool].base}?sid=${c.id}&myst=1`;
+  CHAR_BY_KEY[c.key] = c;
 });
 
-let registered = []; /* 登録済みのID(登録順) */
+let registered = []; /* 登録済みの「作品+ID」(例: S120 / H101)(登録順) */
 
 function loadChars() {
   try {
     const saved = JSON.parse(localStorage.getItem(CHARS_KEY) || '[]');
-    const ids = [];
+    const keys = [];
     (Array.isArray(saved) ? saved : []).forEach(item => {
-      let id = null;
-      if (typeof item === 'string') id = item;
-      else if (item && typeof item.u === 'string') {
+      let key = null;
+      if (typeof item === 'string') {
+        key = /^[SH]\d+$/.test(item) ? item : (/^\d+$/.test(item) ? 'S' + item : null);
+      } else if (item && typeof item.u === 'string') {
         const m = item.u.match(/[?&]sid=(\d+)/);
-        if (m) id = m[1];
+        if (m) key = (/heartbeat-academy\.com/.test(item.u) ? 'H' : 'S') + m[1];
       }
-      if (id && CHAR_BY_ID[id] && !ids.includes(id)) ids.push(id);
+      if (key && CHAR_BY_KEY[key] && !keys.includes(key)) keys.push(key);
     });
-    registered = ids;
+    registered = keys;
   } catch (e) {
     registered = [];
   }
@@ -433,6 +519,40 @@ function loadChars() {
 function saveChars() {
   localStorage.setItem(CHARS_KEY, JSON.stringify(registered));
 }
+
+/* コピーの最後に表示を戻すステディ・カレ(作品ごとに、登録済みの中から1人) */
+let backSel = { S: null, H: null };
+function loadBack() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BACK_KEY) || '{}');
+    ['S', 'H'].forEach(p => {
+      const k = saved && saved[p];
+      backSel[p] = (k && registered.includes(k) && CHAR_BY_KEY[k] && CHAR_BY_KEY[k].pool === p) ? k : null;
+    });
+  } catch (e) {
+    backSel = { S: null, H: null };
+  }
+}
+function saveBack() {
+  localStorage.setItem(BACK_KEY, JSON.stringify(backSel));
+}
+function renderBack() {
+  ['S', 'H'].forEach(p => {
+    const sel = document.getElementById('back-' + p);
+    const list = registered.map(k => CHAR_BY_KEY[k]).filter(c => c.pool === p);
+    sel.innerHTML = '<option value="">指定しない</option>' + list.map(c => `<option value="${c.key}">${c.name}</option>`).join('');
+    sel.value = list.some(c => c.key === backSel[p]) ? backSel[p] : '';
+    sel.disabled = list.length === 0;
+  });
+}
+['S', 'H'].forEach(p => {
+  document.getElementById('back-' + p).addEventListener('change', e => {
+    backSel[p] = e.target.value || null;
+    saveBack();
+    refreshBookmarklet();
+    showToast('設定を変えました。ブックマークを登録し直してください');
+  });
+});
 
 let toastTimer = null;
 function showToast(msg) {
@@ -443,27 +563,40 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 1500);
 }
 
-function buildBookmarklet() {
-  const cfg = { ch: registered.map(id => {
-    const c = CHAR_BY_ID[id];
-    return { n: c.name, u: c.url, c: c.color, t: c.text };
-  }) };
+function buildBookmarklet(action) {
+  const cfg = {
+    action: action || 'menu',
+    ch: registered.map(key => {
+      const c = CHAR_BY_KEY[key];
+      return { n: c.name, u: c.url, c: c.color, t: c.text };
+    }),
+    back: ['S', 'H'].filter(p => backSel[p]).map(p => {
+      const c = CHAR_BY_KEY[backSel[p]];
+      return { n: c.name, u: c.url };
+    }),
+  };
   const body = '(function(){' + extractComment.toString() + ';(' + bookmarkletMain.toString() + ')(' + JSON.stringify(cfg) + ');})();void 0';
   return 'javascript:' + encodeURIComponent(body.replace(/\s*\n\s*/g, ' '));
 }
 
 function refreshBookmarklet() {
-  const code = buildBookmarklet();
-  document.getElementById('bm-link').href = code;
-  document.getElementById('bm-code').value = code;
+  [['bm-link', 'bm-code', 'menu'], ['bm-link-current', 'bm-code-current', 'current'], ['bm-link-all', 'bm-code-all', 'all']].forEach(([linkId, codeId, action]) => {
+    const code = buildBookmarklet(action);
+    document.getElementById(linkId).href = code;
+    document.getElementById(codeId).value = code;
+  });
 }
 
 /* 未登録のステディ・カレだけを選択肢に出す(重複登録を防ぐ) */
 function renderSelect() {
   const sel = document.getElementById('char-select');
-  const rest = CHARACTERS.filter(c => !registered.includes(c.id));
-  sel.innerHTML = `<option value="" disabled selected>${rest.length ? 'ステディ・カレを選択' : '全員登録済みです'}</option>`
-    + rest.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const rest = CHARACTERS.filter(c => !registered.includes(c.key));
+  let h = `<option value="" disabled selected>${rest.length ? 'ステディ・カレを選択' : '全員登録済みです'}</option>`;
+  ['S', 'H'].forEach(pool => {
+    const opts = rest.filter(c => c.pool === pool).map(c => `<option value="${c.key}">${c.name}</option>`).join('');
+    if (opts) h += `<optgroup label="${SITES[pool].label}">${opts}</optgroup>`;
+  });
+  sel.innerHTML = h;
   sel.disabled = rest.length === 0;
   document.getElementById('char-add-btn').disabled = rest.length === 0;
 }
@@ -474,24 +607,28 @@ function renderChars() {
     wrap.innerHTML = '<div class="empty">まだ登録されていません。</div>';
     return;
   }
-  wrap.innerHTML = registered.map((id, i) => {
-    const c = CHAR_BY_ID[id];
+  wrap.innerHTML = registered.map((key, i) => {
+    const c = CHAR_BY_KEY[key];
     return `
     <div class="char-item">
       <span class="char-chip" style="background:${c.color};color:${c.text};">${c.name}</span>
-      <span class="char-id">ID ${c.id}</span>
+      <span class="char-id">${SITES[c.pool].label} ID ${c.id}</span>
       <button type="button" class="char-del" data-i="${i}">✖</button>
     </div>`;
   }).join('');
   wrap.querySelectorAll('.char-del').forEach(btn => {
     btn.addEventListener('click', () => {
       const i = Number(btn.dataset.i);
-      const c = CHAR_BY_ID[registered[i]];
+      const c = CHAR_BY_KEY[registered[i]];
       if (!confirm(`「${c.name}」を削除します。よろしいですか？`)) return;
+      const removed = registered[i];
       registered.splice(i, 1);
+      ['S', 'H'].forEach(p => { if (backSel[p] === removed) backSel[p] = null; });
       saveChars();
+      saveBack();
       renderSelect();
       renderChars();
+      renderBack();
       refreshBookmarklet();
     });
   });
@@ -500,34 +637,41 @@ function renderChars() {
 document.getElementById('char-add-btn').addEventListener('click', () => {
   const sel = document.getElementById('char-select');
   const statusEl = document.getElementById('char-status');
-  const id = sel.value;
-  if (!id) { statusEl.className = 'status err'; statusEl.textContent = 'ステディ・カレを選択してください。'; return; }
-  if (registered.includes(id)) { statusEl.className = 'status err'; statusEl.textContent = 'すでに登録されています。'; return; }
-  registered.push(id);
+  const key = sel.value;
+  if (!key) { statusEl.className = 'status err'; statusEl.textContent = 'ステディ・カレを選択してください。'; return; }
+  if (registered.includes(key)) { statusEl.className = 'status err'; statusEl.textContent = 'すでに登録されています。'; return; }
+  registered.push(key);
   saveChars();
   renderSelect();
   renderChars();
+  renderBack();
   refreshBookmarklet();
   statusEl.className = 'status ok';
   statusEl.textContent = '追加しました。ブックマークを登録し直してください。';
 });
 
-document.getElementById('bm-copy-btn').addEventListener('click', () => {
-  const text = document.getElementById('bm-code').value;
-  navigator.clipboard.writeText(text)
-    .then(() => showToast('コードをコピーしました'))
-    .catch(() => showToast('コピーできませんでした'));
+[['bm-copy-btn', 'bm-code'], ['bm-copy-current', 'bm-code-current'], ['bm-copy-all', 'bm-code-all']].forEach(([btnId, codeId]) => {
+  document.getElementById(btnId).addEventListener('click', () => {
+    const text = document.getElementById(codeId).value;
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('コードをコピーしました'))
+      .catch(() => showToast('コピーできませんでした'));
+  });
 });
 
 /* このページ上でリンクを押しても動作しない(ゲームのページで実行するもの)ため案内を出す */
-document.getElementById('bm-link').addEventListener('click', (e) => {
-  e.preventDefault();
-  showToast('ブックマークバーにドラッグして登録してください');
+['bm-link', 'bm-link-current', 'bm-link-all'].forEach(id => {
+  document.getElementById(id).addEventListener('click', (e) => {
+    e.preventDefault();
+    showToast('ブックマークバーにドラッグして登録してください');
+  });
 });
 
 loadChars();
+loadBack();
 renderSelect();
 renderChars();
+renderBack();
 refreshBookmarklet();
 </script>
 </body>
