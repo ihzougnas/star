@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>星色バックナンバー</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:#333;background:#fff;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+/* 全体を中央寄せ。幅は画像に依存せず固定(最大1200px:メニュー220+表示エリア800+全体図180) */
+#wrap{display:flex;width:100%;max-width:1200px;height:100%;margin:0 auto;border-left:1px solid #ddd;border-right:1px solid #ddd}
+#menu{flex:0 0 220px;min-width:0;height:100%;overflow-y:auto;background:#f5f3ee;border-right:1px solid #ddd}
+#menu h1{font-size:16px;padding:16px 14px 12px}
+.year-btn{display:block;width:100%;text-align:left;border:0;background:#e8e4d8;padding:10px 14px;font-size:15px;font-weight:bold;cursor:pointer;border-top:1px solid #d6d1c0;color:#333;font-family:inherit}
+.year-btn::before{content:"▶";display:inline-block;margin-right:8px;font-size:11px;transition:transform .15s}
+.year-btn.open::before{transform:rotate(90deg)}
+.year-btn:hover{background:#ddd7c4}
+.list{display:none}
+.list.open{display:block}
+.item{display:block;width:100%;text-align:left;border:0;background:transparent;padding:8px 14px 8px 32px;font-size:14px;cursor:pointer;color:#333;font-family:inherit}
+.item:hover{background:#ece8da}
+.item.active{background:#5BBAF8;font-weight:bold}
+/* 画像表示エリア:縦横スクロール。画像は中央寄せ(幅がエリアより大きい場合は左端から横スクロール) */
+#area{flex:1 1 0;min-width:0;height:100%;overflow:auto;background:#fff;position:relative}
+#placeholder{padding:24px;color:#777;font-size:14px}
+#viewer img{display:block;margin:0 auto;max-width:none;max-height:none;width:auto;height:auto}
+#err{padding:24px;color:#b00020;font-size:14px}
+/* 右側:全体図 */
+#side{flex:0 0 180px;height:100%;display:flex;flex-direction:column;background:#f5f3ee;border-left:1px solid #ddd;padding:12px}
+#miniBox{flex:1 1 0;min-height:0;display:flex;justify-content:center;align-items:flex-start}
+#mini{position:relative;display:none;border:1px solid #bbb;background:#fff;cursor:pointer;touch-action:none;flex:0 0 auto}
+#mini img{display:block;width:100%;height:100%;pointer-events:none;-webkit-user-drag:none}
+#viewer img{-webkit-user-drag:none}
+#marker{position:absolute;border:2px solid #5BBAF8;background:rgba(91,186,248,.22);pointer-events:none;min-width:3px;min-height:3px}
+#pick{display:block;margin:0 14px 8px;padding:8px 12px;border:0;border-radius:6px;background:#5BBAF8;color:#333;font-family:inherit;font-size:14px;font-weight:bold;cursor:pointer}
+#pick:hover{filter:brightness(.95)}
+#resume{display:none;margin:0 14px 8px;padding:8px 12px;border:1px solid #5BBAF8;border-radius:6px;background:#fff;color:#333;font-family:inherit;font-size:14px;font-weight:bold;cursor:pointer;width:calc(100% - 28px)}
+#pick{width:calc(100% - 28px)}
+#note{margin:0 14px 12px;font-size:12px;color:#777;min-height:1em;word-break:break-all}
+#hint{margin:-4px 14px 12px;font-size:11px;color:#999}
+@media(max-width:700px){#menu{flex-basis:140px}.item{padding-left:22px;font-size:13px}#side{flex-basis:90px;padding:8px}}
+</style>
+</head>
+<body>
+<div id="wrap">
+<nav id="menu"><h1>星色バックナンバー</h1><button id="pick" type="button">フォルダを選択</button><button id="resume" type="button">前回のフォルダを開く</button><p id="note"></p><p id="hint"></p><div id="years"></div><input id="picker" type="file" webkitdirectory multiple hidden></nav>
+<main id="area"><p id="placeholder">「フォルダを選択」を押して、画像が入っているフォルダを指定してください。</p><div id="viewer"></div></main>
+<aside id="side"><div id="miniBox"><div id="mini"><img id="miniImg" alt="" draggable="false"><div id="marker"></div></div></div></aside>
+</div>
+<script>
+// 表示できるファイル名: 8桁の日付(YYYYMMDD) + 任意の英字1文字 + .png (例: 20230901.png / 20231201b.png)
+const NAME_RE = /^(\d{4})(\d{2})(\d{2})([a-z]?)\.png$/i;
+const YEAR_SUFFIX = "年";
+const LOAD_ERROR = "画像を読み込めませんでした:";
+const MSG_PICK = "「フォルダを選択」を押して、画像が入っているフォルダを指定してください。";
+const MSG_CHOOSE = "左のメニューから年を選び、画像を選んでください。";
+const MSG_NONE = "表示できる画像が見つかりませんでした。ファイル名が「20260901.png」の形式の画像が入っているフォルダを指定してください。";
+const NOTE_COUNT_SUFFIX = "件の画像を読み込みました";
+const MSG_LOADING = "読み込み中…";
+const MSG_LAST = "前回のフォルダ:";
+const MSG_LOST = "前回のフォルダを読み込めませんでした。もう一度フォルダを選択してください。";
+const HINT_NO_KEEP = "このブラウザでは、ページを更新するとフォルダの選択が解除されます(Chrome・Edgeでは保持されます)。";
+
+const yearsEl=document.getElementById("years");
+const area=document.getElementById("area");
+const viewer=document.getElementById("viewer");
+const placeholder=document.getElementById("placeholder");
+const miniBox=document.getElementById("miniBox");
+const mini=document.getElementById("mini");
+const miniImg=document.getElementById("miniImg");
+const marker=document.getElementById("marker");
+const pick=document.getElementById("pick");
+const picker=document.getElementById("picker");
+const note=document.getElementById("note");
+const hint=document.getElementById("hint");
+const resume=document.getElementById("resume");
+let yearBtns={}, lists={};
+let activeItem=null, curImg=null, curUrl=null;
+
+// 20230901 -> 2023年9月1日 / 20231201b -> 2023年12月1日(b)
+function fmt(name){
+  const m=/^(\d{4})(\d{2})(\d{2})(.*)$/.exec(name);
+  if(!m)return name;
+  return (+m[1])+"年"+(+m[2])+"月"+(+m[3])+"日"+(m[4]?"("+m[4]+")":"");
+}
+function openYear(y){
+  for(const k in lists){
+    const open=(k===y)&&!lists[k].classList.contains("open");
+    lists[k].classList.toggle("open",open);
+    yearBtns[k].classList.toggle("open",open);
+  }
+}
+function show(file,name,btn){
+  if(activeItem)activeItem.classList.remove("active");
+  btn.classList.add("active");activeItem=btn;
+  placeholder.style.display="none";
+  viewer.innerHTML="";
+  mini.style.display="none";
+  if(curUrl){URL.revokeObjectURL(curUrl);curUrl=null;}
+  const url=URL.createObjectURL(file);
+  curUrl=url;
+  const img=new Image();
+  img.alt=name;img.draggable=false;
+  img.onload=()=>{ if(curImg===img){ layoutMini(); } };
+  img.onerror=()=>{viewer.innerHTML="";curImg=null;const p=document.createElement("p");p.id="err";p.textContent=LOAD_ERROR+file.name;viewer.appendChild(p);};
+  curImg=img;
+  img.src=url;
+  miniImg.src=url;
+  viewer.appendChild(img);
+  area.scrollTo(0,0);
+}
+// 全体図のサイズ決定(画像全体が全体図パネルに収まるよう縮小)
+function layoutMini(){
+  if(!curImg||!curImg.naturalWidth)return;
+  const nw=curImg.naturalWidth, nh=curImg.naturalHeight;
+  const s=Math.min(miniBox.clientWidth/nw, miniBox.clientHeight/nh, 1);
+  mini.style.width=Math.max(2,Math.round(nw*s))+"px";
+  mini.style.height=Math.max(2,Math.round(nh*s))+"px";
+  mini.style.display="block";
+  updateMarker();
+}
+// 表示範囲のマーク更新
+function updateMarker(){
+  if(!curImg||!curImg.naturalWidth||mini.style.display==="none")return;
+  const ir=curImg.getBoundingClientRect(), cr=area.getBoundingClientRect();
+  const vl=cr.left+area.clientLeft, vt=cr.top+area.clientTop;
+  const l=Math.max(0,vl-ir.left), t=Math.max(0,vt-ir.top);
+  const r=Math.min(ir.width, vl+area.clientWidth-ir.left);
+  const b=Math.min(ir.height, vt+area.clientHeight-ir.top);
+  const kx=mini.clientWidth/ir.width, ky=mini.clientHeight/ir.height;
+  marker.style.left=(l*kx)+"px";
+  marker.style.top=(t*ky)+"px";
+  marker.style.width=(Math.max(0,r-l)*kx)+"px";
+  marker.style.height=(Math.max(0,b-t)*ky)+"px";
+}
+// 全体図のクリック/ドラッグで表示位置を移動
+function jump(e){
+  if(!curImg)return;
+  const ir=curImg.getBoundingClientRect(), cr=area.getBoundingClientRect(), mr=mini.getBoundingClientRect();
+  const x=Math.min(Math.max((e.clientX-mr.left)/mr.width,0),1)*ir.width;
+  const y=Math.min(Math.max((e.clientY-mr.top)/mr.height,0),1)*ir.height;
+  const imgX=ir.left-cr.left-area.clientLeft+area.scrollLeft;
+  const imgY=ir.top-cr.top-area.clientTop+area.scrollTop;
+  area.scrollLeft=imgX+x-area.clientWidth/2;
+  area.scrollTop=imgY+y-area.clientHeight/2;
+}
+// ページ内の選択・ドラッグ・右クリックを無効化
+["contextmenu","selectstart","dragstart"].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
+let dragging=false;
+mini.addEventListener("pointerdown",e=>{e.preventDefault();dragging=true;mini.setPointerCapture(e.pointerId);jump(e);});
+mini.addEventListener("pointermove",e=>{if(dragging)jump(e);});
+mini.addEventListener("pointerup",()=>{dragging=false;});
+mini.addEventListener("pointercancel",()=>{dragging=false;});
+let raf=0;
+area.addEventListener("scroll",()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(updateMarker);});
+window.addEventListener("resize",()=>{layoutMini();});
+
+// 選択したフォルダ(サブフォルダ含む)から、表示できるファイル名の画像だけを年ごとに集める
+function collect(files){
+  const map={}; let n=0;
+  files.forEach(f=>{
+    const m=NAME_RE.exec(f.name);
+    if(!m)return;
+    const mo=+m[2], d=+m[3];
+    if(mo<1||mo>12||d<1||d>31)return;
+    const stem=f.name.replace(/\.png$/i,"");
+    const y=m[1];
+    if(!map[y])map[y]={};
+    if(map[y][stem])return; // 同じ名前が複数ある場合は最初の1件のみ
+    map[y][stem]=f; n++;
+  });
+  return {map,n};
+}
+function buildMenu(map,n,label){
+  // 表示状態のリセット
+  yearsEl.innerHTML="";yearBtns={};lists={};activeItem=null;curImg=null;
+  viewer.innerHTML="";mini.style.display="none";
+  if(curUrl){URL.revokeObjectURL(curUrl);curUrl=null;}
+  placeholder.style.display="";
+  placeholder.textContent=n?MSG_CHOOSE:MSG_NONE;
+  note.textContent=n?(n+NOTE_COUNT_SUFFIX+(label?"("+label+")":"")):"";
+  Object.keys(map).sort().forEach(y=>{
+    const b=document.createElement("button");
+    b.className="year-btn";b.textContent=y+YEAR_SUFFIX;
+    const l=document.createElement("div");l.className="list";
+    Object.keys(map[y]).sort((a,c)=>a.toLowerCase()<c.toLowerCase()?-1:a.toLowerCase()>c.toLowerCase()?1:0).forEach(name=>{
+      const it=document.createElement("button");
+      it.className="item";it.textContent=fmt(name);
+      it.onclick=()=>show(map[y][name],name,it);
+      l.appendChild(it);
+    });
+    b.onclick=()=>openYear(y);
+    yearBtns[y]=b;lists[y]=l;
+    yearsEl.appendChild(b);yearsEl.appendChild(l);
+  });
+  area.scrollTo(0,0);
+}
+// ---- フォルダの選択と保持 ----
+// Chrome/Edge: フォルダへの参照(ハンドル)をIndexedDBに保存し、ページ更新後も同じフォルダを開き直す。
+// それ以外のブラウザ: <input webkitdirectory> で読み込む(ページ更新で選択は解除される)。
+function idb(){return new Promise((res,rej)=>{const q=indexedDB.open("star-backnumber",1);q.onupgradeneeded=()=>q.result.createObjectStore("h");q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});}
+async function saveHandle(h){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction("h","readwrite");t.objectStore("h").put(h,"dir");t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
+async function loadHandle(){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction("h","readonly");const q=t.objectStore("h").get("dir");q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error);});}
+
+// フォルダ内(サブフォルダ含む)を走査し、表示できるファイル名のものだけFileとして取得
+async function scan(dir,out,depth){
+  for await(const [name,h] of dir.entries()){
+    if(h.kind==="file"){
+      if(NAME_RE.test(name)){try{out.push(await h.getFile());}catch(e){}}
+    }else if(h.kind==="directory"&&depth<8){
+      await scan(h,out,depth+1);
+    }
+  }
+}
+let storedHandle=null;
+async function loadFromHandle(h){
+  note.textContent=MSG_LOADING;
+  try{
+    const files=[];
+    await scan(h,files,0);
+    const {map,n}=collect(files);
+    buildMenu(map,n,h.name);
+    resume.style.display="none";
+  }catch(e){
+    buildMenu({},0);
+    note.textContent=MSG_LOST;
+  }
+}
+pick.addEventListener("click",async()=>{
+  if(!window.showDirectoryPicker){picker.click();return;}
+  try{
+    const h=await window.showDirectoryPicker({id:"star-backnumber",mode:"read"});
+    storedHandle=h;
+    try{await saveHandle(h);}catch(e){}
+    await loadFromHandle(h);
+  }catch(e){
+    if(e&&e.name==="AbortError")return; // キャンセル
+    picker.click(); // 使えない環境では従来の方式に切り替え
+  }
+});
+resume.addEventListener("click",async()=>{
+  if(!storedHandle)return;
+  let p="denied";
+  try{p=await storedHandle.requestPermission({mode:"read"});}catch(e){}
+  if(p==="granted")await loadFromHandle(storedHandle);
+});
+picker.addEventListener("change",()=>{
+  const files=Array.from(picker.files||[]);
+  const {map,n}=collect(files);
+  const rel=files.length&&files[0].webkitRelativePath?files[0].webkitRelativePath.split("/")[0]:"";
+  buildMenu(map,n,rel);
+  picker.value=""; // 同じフォルダを再選択しても読み込み直せるようにする
+});
+// 起動時: 前回のフォルダが保存されていれば開き直す
+(async()=>{
+  if(!window.showDirectoryPicker){hint.textContent=HINT_NO_KEEP;return;}
+  let h=null;
+  try{h=await loadHandle();}catch(e){}
+  if(!h)return;
+  storedHandle=h;
+  let perm="prompt";
+  try{perm=await h.queryPermission({mode:"read"});}catch(e){}
+  if(perm==="granted"){await loadFromHandle(h);}
+  else{resume.style.display="block";note.textContent=MSG_LAST+h.name;}
+})();
+</script>
+</body>
+</html>
