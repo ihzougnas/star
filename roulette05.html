@@ -57,7 +57,7 @@
     text-align: center;
     font-size: 12px;
     color: #aaa;
-    margin-top: 8px;
+    margin-top: 10px;
   }
   .probability-line {
     text-align: center;
@@ -70,7 +70,7 @@
   .mode-toggle {
     display: flex;
     gap: 8px;
-    margin-bottom: 16px;
+    margin-top: 14px;
   }
   .mode-btn {
     flex: 1;
@@ -210,13 +210,13 @@
     <button class="title-btn active" id="title-S">星色ルーレット</button>
     <button class="title-btn" id="title-H">音楽院ルーレット</button>
   </div>
-  <div class="subtitle" id="subtitle"></div>
-  <div class="probability-line" id="probability-line"></div>
-
   <div class="mode-toggle">
     <button class="mode-btn active" id="mode-unique">重複なし</button>
     <button class="mode-btn" id="mode-normal">重複あり</button>
   </div>
+
+  <div class="subtitle" id="subtitle"></div>
+  <div class="probability-line" id="probability-line"></div>
 
   <div class="result-box" id="result-box">
     <div class="result-placeholder" id="result-placeholder">ボタンを押して開始</div>
@@ -245,7 +245,7 @@ const TITLES = {
     label: '星色ルーレット',
     color: '#5BBAF8',
     hover: '#3aa8f0',
-    subtitle: 'ステディ全27名+1名(2026年10月9日時点)',
+    subtitle: 'ステディ全27名+1名(2026年11月26日時点)',
     characters: [
       { name: '氷室蓮',     color: '#7597E1' },
       { name: '白鳥恭治',   color: '#DD91EB' },
@@ -281,7 +281,7 @@ const TITLES = {
     label: '音楽院ルーレット',
     color: '#FF88B6',
     hover: '#f070a4',
-    subtitle: 'カレ全5名+1名(2026年10月9日時点)',
+    subtitle: 'カレ全5名+1名(2026年11月26日時点)',
     characters: [
       { name: '獅堂ケイ',   color: '#BF014E' },
       { name: '漣大和',     color: '#4289BD' },
