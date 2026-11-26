@@ -103,9 +103,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 14px;
+    margin-bottom: 6px;
     transition: background-color 0.05s;
     overflow: hidden;
+  }
+  .result-box.copyable { cursor: pointer; }
+  .result-hint {
+    height: 16px;
+    margin-bottom: 14px;
+    text-align: center;
+    font-size: 11px;
+    line-height: 16px;
+    color: #b5b5b5;
   }
   .result-placeholder {
     color: #bbb;
@@ -213,6 +222,7 @@
     <div class="result-placeholder" id="result-placeholder">ボタンを押して開始</div>
     <div class="result-name" id="result-name" style="display:none;"></div>
   </div>
+  <div class="result-hint" id="result-hint">結果をクリックまたはタップでコピー</div>
 
   <button class="spin-btn" id="spin-btn">ルーレットを回す</button>
   <div class="status-line" id="status-line"></div>
@@ -309,6 +319,7 @@ let spinning = false;
 const resultBox = document.getElementById('result-box');
 const placeholder = document.getElementById('result-placeholder');
 const resultName = document.getElementById('result-name');
+const resultHint = document.getElementById('result-hint');
 const spinBtn = document.getElementById('spin-btn');
 const statusLine = document.getElementById('status-line');
 const historyGrid = document.getElementById('history-grid');
@@ -354,6 +365,7 @@ function renderResult(char, isSpinning) {
   resultBox.style.background = char.color;
   resultName.style.color = char.text;
   resultBox.style.opacity = isSpinning ? '0.75' : '1';
+  resultBox.classList.toggle('copyable', !isSpinning);
 }
 
 function showPlaceholder() {
@@ -361,6 +373,37 @@ function showPlaceholder() {
   resultName.style.display = 'none';
   resultBox.style.background = '#fff';
   resultBox.style.opacity = '1';
+  resultBox.classList.remove('copyable');
+}
+
+// ---- 結果のコピー(案内の文言は常に表示。コピー後は同じ場所の文言を一瞬だけ切り替える)
+const HINT_TEXT = '結果をクリックまたはタップでコピー';
+let hintTimer = null;
+function resetHint() {
+  clearTimeout(hintTimer);
+  hintTimer = null;
+  resultHint.textContent = HINT_TEXT;
+}
+function flashHint(text) {
+  clearTimeout(hintTimer);
+  resultHint.textContent = text;
+  hintTimer = setTimeout(resetHint, 1500);
+}
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) { /* 下の方法を試す */ }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  ta.remove();
+  return ok;
 }
 
 function renderHistory() {
@@ -402,6 +445,7 @@ function applyTitle() {
 }
 
 function refreshView() {
+  resetHint();
   const h = currentHistory();
   if (h.length > 0) {
     renderResult(h[h.length - 1], false);
@@ -461,6 +505,7 @@ function spin() {
     return;
   }
   spinning = true;
+  resetHint();
   setControlsDisabled(true);
 
   let ticks = 0;
@@ -487,6 +532,11 @@ TITLE_KEYS.forEach(t => titleBtns[t].addEventListener('click', () => switchTitle
 modeNormalBtn.addEventListener('click', () => switchMode('normal'));
 modeUniqueBtn.addEventListener('click', () => switchMode('unique'));
 spinBtn.addEventListener('click', spin);
+resultBox.addEventListener('click', async () => {
+  if (spinning || resultName.style.display === 'none') return;   /* 抽選中・結果が出る前はコピーしない */
+  const ok = await copyText(resultName.textContent);
+  flashHint(ok ? 'コピーしました' : 'コピーできませんでした');
+});
 clearBtn.addEventListener('click', resetAll);
 
 loadHistories();
